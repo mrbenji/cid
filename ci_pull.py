@@ -1,4 +1,5 @@
 import bdt_utils
+
 from openpyxl import load_workbook
 
 slog = load_workbook('11629.xlsm')
@@ -13,19 +14,22 @@ for row in pn_rows:
             continue
 
         if cell.column == "A":
-            pn_table.append({"pn":cell.value, "rev":None, "desc":None, "indent":None})
+            pn_table.append([])
+            pn_table[-1].append(cell.value)
 
-        if cell.column == "B":
-            pn_table[-1]["rev"] = cell.value
+        if cell.column == "B" and not pn_sheet['C'+str(cell.row)].value:
+            pn_table[-1][-1] = pn_table[-1][-1] + " " + "Rev. " + cell.value
 
         if cell.column == "C":
             if cell.value:
-                pn_table[-1]["rev"] = cell.value
+                pn_table[-1][-1] = pn_table[-1][-1] + " " + "Rev. " + cell.value
 
         if cell.column == "F":
             if cell.value:
-                pn_table[-1]["desc"] = cell.value
-                pn_table[-1]["indent"] = int("{:.0f}".format(cell.style.alignment.indent))
+                pn_table[-1][-1] = "  " * int("{:.0f}".format(cell.style.alignment.indent)) + pn_table[-1][-1]
+                pn_table[-1].append(cell.value)
 
-for part in pn_table:
-    print "{}{} Rev. {}  -  {}".format("  " * part["indent"], part["pn"], part["rev"], part["desc"])
+print bdt_utils.pretty_table(pn_table)
+# for part in pn_table:
+#     print "{} Rev. {}  -  {}".format(part[0], part[1], part[2])
+
