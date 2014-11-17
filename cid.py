@@ -18,7 +18,23 @@ def extract_part_nums (filename):
     row_num = 0
     pn_table = []
     current_media = ""
+    media_sets = {}
     skip_media = False
+
+    # split PN rows into per-media-type lists
+    for row in pn_rows:
+        row_num += 1
+        if row_num > 4:
+            current_media_col = pn_sheet['G'+str(row_num)].value
+            if current_media_col and not (current_media_col.strip() == current_media):
+                current_media = str(current_media_col).strip()
+                if not current_media in MEDIA_WE_SKIP:
+                    media_sets[current_media] = []
+            if current_media and not current_media in MEDIA_WE_SKIP:
+                media_sets[current_media].append(row)
+
+    print str(media_sets.keys())
+    row_num = 0
 
     for row in pn_rows:
         row_num += 1
