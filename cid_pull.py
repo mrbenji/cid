@@ -61,8 +61,6 @@ def extract_part_nums (filename):
                             skip_media = True
                         else:
                             skip_media = False
-                            # if we're printing to screen, insert media name in previous row
-
                             hold_row = pn_table.pop()
                             pn_table.append(["\n\n" + current_media, ""])
                             pn_table.append(hold_row)
