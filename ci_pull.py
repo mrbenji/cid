@@ -4,7 +4,7 @@ import sys
 import openpyxl
 
 
-def put_part_nums_in_table (filename):
+def extract_part_nums (filename):
 
     try:
         eco_form = openpyxl.load_workbook(filename)
@@ -35,7 +35,13 @@ def put_part_nums_in_table (filename):
                 pn_table[-1][-1] = pn_table[-1][-1] + " " + "Rev. " + cell.value
 
             if cell.column == "F" and cell.value:
+                if pn_table[-1][-1][0:3] in ["139"]:
+                    is_139 = True
+                else: is_139 = False
+
                 pn_table[-1][-1] = "  " * int("{:.0f}".format(cell.style.alignment.indent)) + pn_table[-1][-1]
+                if is_139:
+                    pn_table[-1][-1] = "\n" + pn_table[-1][-1]
                 pn_table[-1].append(cell.value)
 
             if cell.column == "G" and cell.value:
@@ -63,7 +69,7 @@ def main():
     arguments = parser.parse_args(sys.argv[1:])
     # Convert parsed arguments from Namespace to dictionary
     arguments = vars(arguments)
-    put_part_nums_in_table(arguments["eco_file"])
+    extract_part_nums(arguments["eco_file"])
 
 if __name__ == "__main__":
     main()
