@@ -38,8 +38,8 @@ def pretty_table(data, padding=2):
 
         # if a column is wider in this row than in previous rows, reset this column's max width
         for col in row:
-            if len(col.strip()) > max_col_widths[col_num]:
-                max_col_widths[col_num] = len(col.strip())
+            if len(col)-col.count('\n') > max_col_widths[col_num]:
+                max_col_widths[col_num] = len(col)-col.count('\n')
             col_num += 1
 
     for row in data:
