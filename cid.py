@@ -77,7 +77,8 @@ def make_parser():
     description = "CONTENTS_ID Creator"
     parser = argparse.ArgumentParser(description=description)
     parser.add_argument("eco_file", type=str, help="full path to eco form workbook")
-    parser.add_argument('-p', '--print-to-screen', action='store_true', default=False)
+    parser.add_argument('-s', '--print-to-screen', action='store_true', default=False)
+    parser.add_argument('-f', '--print-to-files', action='store_true', default=True)
     return parser
 
 
@@ -86,8 +87,11 @@ def main():
     arguments = parser.parse_args(sys.argv[1:])
     # Convert parsed arguments from Namespace to dictionary
     arguments = vars(arguments)
+
+    contents_id_dump = extract_part_nums(arguments["eco_file"])
+
     if arguments["print_to_screen"]:
-        print extract_part_nums(arguments["eco_file"])
+        print contents_id_dump
 
 if __name__ == "__main__":
     main()
