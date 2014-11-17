@@ -74,11 +74,12 @@ def extract_part_nums (filename):
 
 def make_parser():
     """ Construct the command line parser """
-    description = "CONTENTS_ID Creator"
+    description = "Extract PNs from ECO form, create CONTENTS_ID files"
     parser = argparse.ArgumentParser(description=description)
     parser.add_argument("eco_file", type=str, help="full path to eco form workbook")
-    parser.add_argument('-s', '--print-to-screen', action='store_true', default=False)
-    parser.add_argument('-f', '--print-to-files', action='store_true', default=True)
+    parser.add_argument('-m', '--print-to-many', action='store_true', default=True, help="print to many files (default)")
+    parser.add_argument('-o', '--print-to-one', action='store_true', default=False, help="print to one file (CONTENTS_ID.all)")
+    parser.add_argument('-s', '--screen-print', action='store_true', default=False, help="print to screen")
     return parser
 
 
@@ -90,8 +91,13 @@ def main():
 
     contents_id_dump = extract_part_nums(arguments["eco_file"])
 
-    if arguments["print_to_screen"]:
+    if arguments["screen_print"]:
         print contents_id_dump
+
+    if arguments["print_to_one"]:
+        with open("CONTENTS_ID.all", "w") as f:
+            f.write(contents_id_dump)
+
 
 if __name__ == "__main__":
     main()
