@@ -72,12 +72,32 @@ def extract_part_nums (filename):
     return bdt_utils.pretty_table(pn_table, 4)
 
 
+def print_many_cid_files(contents_id_dump):
+    current_media = None
+
+    for line in contents_id_dump.split("\n"):
+        if line:
+            stripped_line = line.strip()
+            if not stripped_line[0].isdigit():
+                if current_media:
+                    OUTPUT_FILE.close()
+                current_media = line.strip()
+                print "Creating file CONTENTS_ID." + current_media
+                OUTPUT_FILE = open("CONTENTS_ID." + current_media, "w")
+                continue
+        if current_media:
+            OUTPUT_FILE.write(line+"\n")
+
+    if not OUTPUT_FILE.closed:
+        OUTPUT_FILE.close()
+
+
 def make_parser():
     """ Construct the command line parser """
     description = "Extract PNs from ECO form, create CONTENTS_ID files"
     parser = argparse.ArgumentParser(description=description)
     parser.add_argument("eco_file", type=str, help="full path to eco form workbook")
-    parser.add_argument('-m', '--print-to-many', action='store_true', default=True, help="print to many files (default)")
+    parser.add_argument('-m', '--print-to-many', action='store_true', default=False, help="print to many files (default)")
     parser.add_argument('-o', '--print-to-one', action='store_true', default=False, help="print to one file (CONTENTS_ID.all)")
     parser.add_argument('-s', '--screen-print', action='store_true', default=False, help="print to screen")
     return parser
@@ -98,6 +118,12 @@ def main():
         with open("CONTENTS_ID.all", "w") as f:
             f.write(contents_id_dump)
 
+    # if no flags were set, default to "print to many" -- if only -o and/or -s were set, don't print to many.
+    if not arguments["screen_print"] and not arguments["print_to_one"] and not arguments["print_to_many"]:
+        arguments["print_to_many"]=True
+
+    if arguments["print_to_many"]:
+        print_many_cid_files(contents_id_dump)
 
 if __name__ == "__main__":
     main()
