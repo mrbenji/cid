@@ -1,4 +1,4 @@
-VERSION_STRING = "CID v0.7 - 11/18/2014"
+VERSION_STRING = "CID v0.8 - 11/18/2014"
 
 import bdt_utils
 import argparse
@@ -65,6 +65,8 @@ def extract_part_nums(filename, all_parts=False):
 
     cid_tables = {}
     current_media = ""
+    current_pn = ""
+    used_part_numbers = {}
 
     for set_name in media_sets.keys():
         current_indent_level = 0
@@ -76,30 +78,47 @@ def extract_part_nums(filename, all_parts=False):
             for cell in row:
 
                 # we only care about certain columns
-                if not pn_sheet['A'+str(cell.row)].value or cell.column not in "ABCFG":
+                if not pn_sheet['A'+str(cell.row)].value or cell.column not in "ABCEFG":
                     continue
 
                 # "Affected Documentation" column
                 if cell.column == "A":
                     pn_table.append([])
                     pn_table[-1].append(cell.value)
+                    current_pn = cell.value
 
                 # "Cur Rev" column: we skip this if there's a value in "new rev"
                 if cell.column == "B":
                     if not cell.value:
-                        print "\nERROR on PS1 tab: P/N present in cell A{x}, but B{x} is empty.".format(x=cell.row)
+                        print "ERROR on PS1 tab: P/N present in cell A{x}, but B{x} is empty.".format(x=cell.row)
                         exit(1)
                     if not pn_sheet['C'+str(cell.row)].value:
                         pn_table[-1][-1] = pn_table[-1][-1] + " " + "Rev. " + cell.value
+                        current_pn += "Rev. {}".format(cell.value)
 
                 # "New Rev" column
                 if cell.column == "C" and cell.value:
                     pn_table[-1][-1] = pn_table[-1][-1] + " " + "Rev. " + cell.value
+                    current_pn += "Rev. {}".format(cell.value)
+
+                # "ECO" column
+                if cell.column == "E":
+                    if current_pn in used_part_numbers.keys() and not cell.value == "dup" \
+                            and pn_sheet['C'+str(cell.row)].value:
+                        print 'WARNING: Cell A{} has a P/N last used in ' \
+                              'cell {}, but it\'s not marked "dup"!'.format(cell.row, used_part_numbers[current_pn])
+                    elif current_pn not in used_part_numbers.keys() and cell.value == "dup" \
+                            and pn_sheet['C'+str(cell.row)].value:
+                        print 'WARNING: Cell A{} has a new P/N incorrectly marked as "dup"!'.format(cell.row)
+                    elif not pn_sheet['C'+str(cell.row)].value and not cell.value:
+                        print 'WARNING: Cell C{x} has no value, so a value must be added to ' \
+                              'empty cell E{x}!'.format(x=cell.row)
+                    used_part_numbers[current_pn] = "A{}".format(cell.row)
 
                 # "Description..." column
                 if cell.column == "F":
                     if not cell.value:
-                        print "\nERROR on PS1 tab: P/N present in cell A{x}, but F{x} is empty.".format(x=cell.row)
+                        print "ERROR on PS1 tab: P/N present in cell A{x}, but F{x} is empty.".format(x=cell.row)
                         exit(1)
                     new_indent_level = cell.style.alignment.indent
 
