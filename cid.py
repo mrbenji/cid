@@ -35,15 +35,24 @@ def extract_part_nums(filename, all_parts=False):
     for row in pn_rows:
         row_num += 1
         if row_num > 4:
+            if row_num == 5 and not pn_sheet['G5'].value:
+                print "\nERROR @ PS1:G5 - First P/N must have a value in media column."
+                exit(1)
             current_media_col = pn_sheet['G'+str(row_num)].value
-            if current_media_col and not (current_media_col.strip().replace(" ", "_").lower() == current_media):
+            prev_media = str(current_media_col).strip().replace(" ", "_").lower()
+            if current_media_col and not prev_media == current_media:
                 current_media = str(current_media_col).strip().replace(" ", "_").lower()
+                if prev_media in media_sets.keys():
+                    print "\nERROR @ PS1:G{} - Can't re-use {} after switching to a different type.".format(row_num, current_media)
+                    sys.exit(1)
+
                 if not current_media in media_to_skip:
                     media_sets[current_media] = []
             if current_media and not current_media in media_to_skip:
                 media_sets[current_media].append(row)
 
     cid_tables = {}
+    current_media = ""
 
     for set_name in media_sets.keys():
         current_indent_level = 0
@@ -63,7 +72,7 @@ def extract_part_nums(filename, all_parts=False):
                 # "Cur Rev" column: we skip this if there's a value in "new rev"
                 if cell.column == "B":
                     if not cell.value:
-                        print "\nERROR on PS1 tab: P/N present in cell A{x}, but B{x} is empty.\n".format(x=cell.row)
+                        print "\nERROR on PS1 tab: P/N present in cell A{x}, but B{x} is empty.".format(x=cell.row)
                         exit(1)
                     if not pn_sheet['C'+str(cell.row)].value:
                         pn_table[-1][-1] = pn_table[-1][-1] + " " + "Rev. " + cell.value
@@ -75,7 +84,7 @@ def extract_part_nums(filename, all_parts=False):
                 # "Description..." column
                 if cell.column == "F":
                     if not cell.value:
-                        print "\nERROR on PS1 tab: P/N present in cell A{x}, but F{x} is empty.\n".format(x=cell.row)
+                        print "\nERROR on PS1 tab: P/N present in cell A{x}, but F{x} is empty.".format(x=cell.row)
                         exit(1)
                     new_indent_level = cell.style.alignment.indent
 
