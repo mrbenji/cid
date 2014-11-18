@@ -4,7 +4,7 @@ import sys
 import io
 import openpyxl
 
-VERSION_STRING = "CID v0.4 - 11/18/2014"
+VERSION_STRING = "CID v0.6 - 11/18/2014"
 HAS_NO_MEDIA = ["scif", "hard_copy", "hardcopy", "synergy"]
 
 
@@ -115,7 +115,7 @@ def extract_part_nums(filename, all_parts=False):
                             else:
                                 skip_media = False
                                 hold_row = pn_table.pop()
-                                pn_table.append(["\n\n" + current_media, ""])
+                                pn_table.append([current_media, ""])
                                 pn_table.append(hold_row)
 
                     # If we're on a row for media we skip, remove entire row from results
@@ -126,7 +126,7 @@ def extract_part_nums(filename, all_parts=False):
     #return bdt_utils.pretty_table(pn_table, 4)
 
 
-def print_many_cid_files(contents_id_dump):
+def print_many_cid_files(contents_id_dump, eol):
     current_media = None
 
     for line in contents_id_dump.split("\n"):
@@ -137,7 +137,7 @@ def print_many_cid_files(contents_id_dump):
                     output_file.close()
                 current_media = line.strip()
                 print "Creating file CONTENTS_ID." + current_media.replace(" ", "_")
-                output_file = io.open("CONTENTS_ID." + current_media.replace(" ", "_"), "w", newline='')
+                output_file = io.open("CONTENTS_ID." + current_media.replace(" ", "_"), "w", newline=eol)
                 continue
         if current_media:
             output_file.write(line+"\n")
@@ -148,7 +148,7 @@ def print_many_cid_files(contents_id_dump):
 
 def make_parser():
     """ Construct the command line parser """
-    description = VERSION_STRING + " - Create CONTENTS_ID files from ECO part numbers."
+    description = VERSION_STRING + " - Create CONTENTS_ID files from PNs on ECO form."
     parser = argparse.ArgumentParser(description=description)
     parser.add_argument('-v', '--version', action='version', version=VERSION_STRING)
     parser.add_argument("eco_file", type=str, help="eco form filename, w/ full path if not in current dir")
@@ -180,15 +180,21 @@ def main():
 
     cid_dumps = extract_part_nums(arguments["eco_file"], arguments["all_parts"])
 
+    if arguments["dos"]:
+        eol = '\r\n'
+    else: eol = '\n'
+
     if arguments["screen_print"]:
         for dump in cid_dumps:
             print bdt_utils.pretty_table(cid_dumps[dump], 3)
+            print "\n\n"
 
     if arguments["print_to_one"]:
-        with open("CONTENTS_ID.all", "w") as f:
+        print "Creating file CONTENTS_ID.all"
+        with io.open("CONTENTS_ID.all", "w", newline=eol) as f:
             for dump in cid_dumps:
-                print "Creating file CONTENTS_ID.all"
                 f.write(bdt_utils.pretty_table(cid_dumps[dump], 3))
+                f.write(u"\n\n")
 
     # if no flags were set, default to "print to many" -- if only -o and/or -s were set, don't print to many.
     if not arguments["screen_print"] and not arguments["print_to_one"] and not arguments["print_to_many"]:
@@ -196,7 +202,7 @@ def main():
 
     if arguments["print_to_many"]:
         for dump in cid_dumps:
-            print_many_cid_files(bdt_utils.pretty_table(cid_dumps[dump], 3))
+            print_many_cid_files(bdt_utils.pretty_table(cid_dumps[dump], 3), eol)
 
 if __name__ == "__main__":
     main()
