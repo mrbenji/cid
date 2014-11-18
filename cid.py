@@ -1,4 +1,4 @@
-VERSION_STRING = "CID v0.8 - 11/18/2014"
+VERSION_STRING = "CID v0.9 - 11/18/2014"
 
 import bdt_utils
 import argparse
@@ -99,17 +99,17 @@ def extract_part_nums(filename, all_parts=False):
                 # "New Rev" column
                 if cell.column == "C" and cell.value:
                     pn_table[-1][-1] = pn_table[-1][-1] + " " + "Rev. " + cell.value
-                    current_pn += "Rev. {}".format(cell.value)
+                    current_pn += " Rev. {}".format(cell.value)
 
-                # "ECO" column
+                # "ECO" column -- not useful for CONTENTS_ID, but used for form validation.
                 if cell.column == "E":
                     if current_pn in used_part_numbers.keys() and not cell.value == "dup" \
                             and pn_sheet['C'+str(cell.row)].value:
-                        print 'WARNING: Cell A{} has a P/N last used in ' \
-                              'cell {}, but it\'s not marked "dup"!'.format(cell.row, used_part_numbers[current_pn])
+                        print 'WARNING: Row {} has duplicate P/N {},\n         last used in cell {} but ' \
+                              'not marked "dup"'.format(cell.row, current_pn, used_part_numbers[current_pn])
                     elif current_pn not in used_part_numbers.keys() and cell.value == "dup" \
                             and pn_sheet['C'+str(cell.row)].value:
-                        print 'WARNING: Cell A{} has a new P/N incorrectly marked as "dup"!'.format(cell.row)
+                        print 'WARNING: Row {} has new P/N {},\n         incorrectly marked as "dup"'.format(cell.row, current_pn)
                     elif not pn_sheet['C'+str(cell.row)].value and not cell.value:
                         print 'WARNING: Cell C{x} has no value, so a value must be added to ' \
                               'empty cell E{x}!'.format(x=cell.row)
@@ -174,7 +174,7 @@ def print_single_cid_file(contents_id_dump, eol):
             # does this line not start with a part number?  Then it's a media identifier (CD1, Synergy, etc.).
             if not stripped_line[0:3].isdigit():
                 current_media = line.strip()
-                print "Creating file CONTENTS_ID." + current_media.replace(" ", "_")
+                print "Creating file CONTENTS_ID.{}...".format(current_media.replace(" ", "_"))
                 output_file = io.open("CONTENTS_ID." + current_media.replace(" ", "_"), "w", newline=eol)
                 continue
 
@@ -245,7 +245,7 @@ def main():
 
     # Combine all CONTENTS_IDs into one document.  Can be combined with -m and/or -s.
     if arguments["print_to_one"]:
-        print "Creating file CONTENTS_ID.all"
+        print "\nCreating file CONTENTS_ID.all...",
         with io.open("CONTENTS_ID.all", "w", newline=eol) as f:
             for dump in cid_dumps:
                 f.write(bdt_utils.pretty_table(cid_dumps[dump], 3))
@@ -256,6 +256,7 @@ def main():
         arguments["print_to_many"] = True
 
     if arguments["print_to_many"]:
+        print "\n"
         for dump in cid_dumps:
             # print_single_cid_file outputs everything after the media type line to a CONTENTS_ID.<media type> file.
             print_single_cid_file(bdt_utils.pretty_table(cid_dumps[dump], 3), eol)
