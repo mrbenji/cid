@@ -4,7 +4,7 @@ import sys
 import io
 import openpyxl
 
-VERSION_STRING = "CID v0.3 (2014-11-17)"
+VERSION_STRING = "CID v0.4 - 11/18/2014"
 HAS_NO_MEDIA = ["scif", "hard_copy", "hardcopy", "synergy"]
 
 
@@ -150,15 +150,25 @@ def make_parser():
     """ Construct the command line parser """
     description = VERSION_STRING + " - Create CONTENTS_ID files from ECO part numbers."
     parser = argparse.ArgumentParser(description=description)
-    parser.add_argument("eco_file", type=str, help="full path to eco form workbook")
-    parser.add_argument('-m', '--print-to-many', action='store_true', default=False,
+    parser.add_argument('-v', '--version', action='version', version=VERSION_STRING)
+    parser.add_argument("eco_file", type=str, help="eco form filename, w/ full path if not in current dir")
+
+    output_group = parser.add_argument_group('output modes (can be combined)')
+    output_group.add_argument('-m', '--print-to-many', action='store_true', default=False,
                         help="print to many files (default)")
-    parser.add_argument('-o', '--print-to-one', action='store_true', default=False,
+    output_group.add_argument('-o', '--print-to-one', action='store_true', default=False,
                         help="print to one file (CONTENTS_ID.all)")
-    parser.add_argument('-s', '--screen-print', action='store_true', default=False,
+    output_group.add_argument('-s', '--screen-print', action='store_true', default=False,
                         help="print to screen")
-    parser.add_argument('-a', '--all-parts', action='store_true', default=False,
+    output_group.add_argument('-a', '--all-parts', action='store_true', default=False,
                         help="include PNs that aren't on any media")
+
+    eol_group = parser.add_mutually_exclusive_group()
+    eol_group.add_argument('-u', '--unix', action='store_true', default=True,
+                       help="use UNIX line endings (default)")
+    eol_group.add_argument('-d', '--dos', action='store_true', default=False,
+                       help="use DOS line endings")
+
     return parser
 
 
