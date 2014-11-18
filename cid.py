@@ -1,10 +1,10 @@
 VERSION_STRING = "CID v0.9 - 11/18/2014"
 
-import bdt_utils
 import argparse
 import sys
 import io
-import openpyxl
+import openpyxl   # non-standard open source library
+import bdt_utils  # Benji's bag-o'-utility-functions
 
 HAS_NO_MEDIA = ["scif", "hard_copy", "hardcopy", "synergy"]
 
@@ -43,7 +43,7 @@ def extract_part_nums(filename, all_parts=False):
         # skip header section
         if row_num > 4:
             if row_num == 5 and not pn_sheet['G5'].value:
-                print "\nERROR @ PS1:G5 - First P/N must have a value in media column."
+                print "\nERROR: Cell G5 - First P/N must have a value in media column."
                 exit(1)
             current_media_col = pn_sheet['G'+str(row_num)].value
             prev_media = str(current_media_col).strip().replace(" ", "_").lower()
@@ -52,7 +52,7 @@ def extract_part_nums(filename, all_parts=False):
             if current_media_col and not prev_media == current_media:
                 current_media = str(current_media_col).strip().replace(" ", "_").lower()
                 if prev_media in media_sets.keys():
-                    print "\nERROR @ PS1:G{} - Can't re-use {} after switching to a different type.".format(row_num, current_media)
+                    print "\nERROR: Cell G{} - Can't re-use {} after switching to a different type.".format(row_num, current_media)
                     sys.exit(1)
 
                 # if this is a media type we want a CONTENTS_ID for, crate an empty list for it in the media_sets dict
@@ -105,15 +105,16 @@ def extract_part_nums(filename, all_parts=False):
                 if cell.column == "E":
                     if current_pn in used_part_numbers.keys() and not cell.value == "dup" \
                             and pn_sheet['C'+str(cell.row)].value:
-                        print 'WARNING: Row {} has duplicate P/N {},\n         last used in cell {} but ' \
+                        print 'WARNING: Row {} has duplicate P/N {},\n         last used on row {} but ' \
                               'not marked "dup"'.format(cell.row, current_pn, used_part_numbers[current_pn])
                     elif current_pn not in used_part_numbers.keys() and cell.value == "dup" \
                             and pn_sheet['C'+str(cell.row)].value:
-                        print 'WARNING: Row {} has new P/N {},\n         incorrectly marked as "dup"'.format(cell.row, current_pn)
+                        print 'WARNING: Row {} has new P/N {},\n         incorrectly marked ' \
+                              'as "dup"'.format(cell.row, current_pn)
                     elif not pn_sheet['C'+str(cell.row)].value and not cell.value:
                         print 'WARNING: Cell C{x} has no value, so a value must be added to ' \
                               'empty cell E{x}!'.format(x=cell.row)
-                    used_part_numbers[current_pn] = "A{}".format(cell.row)
+                    used_part_numbers[current_pn] = "{}".format(cell.row)
 
                 # "Description..." column
                 if cell.column == "F":
