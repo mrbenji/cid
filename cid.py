@@ -1,8 +1,10 @@
 import bdt_utils
 import argparse
 import sys
+import io
 import openpyxl
 
+VERSION_STRING = "CID v0.3 (2014-11-17)"
 HAS_NO_MEDIA = ["scif", "hard_copy", "hardcopy", "synergy"]
 
 
@@ -135,7 +137,7 @@ def print_many_cid_files(contents_id_dump):
                     output_file.close()
                 current_media = line.strip()
                 print "Creating file CONTENTS_ID." + current_media.replace(" ", "_")
-                output_file = open("CONTENTS_ID." + current_media.replace(" ", "_"), "w")
+                output_file = io.open("CONTENTS_ID." + current_media.replace(" ", "_"), "w", newline='')
                 continue
         if current_media:
             output_file.write(line+"\n")
@@ -146,7 +148,7 @@ def print_many_cid_files(contents_id_dump):
 
 def make_parser():
     """ Construct the command line parser """
-    description = "Extract PNs from ECO form, create CONTENTS_ID files"
+    description = VERSION_STRING + " - Create CONTENTS_ID files from ECO part numbers."
     parser = argparse.ArgumentParser(description=description)
     parser.add_argument("eco_file", type=str, help="full path to eco form workbook")
     parser.add_argument('-m', '--print-to-many', action='store_true', default=False,
@@ -175,6 +177,7 @@ def main():
     if arguments["print_to_one"]:
         with open("CONTENTS_ID.all", "w") as f:
             for dump in cid_dumps:
+                print "Creating file CONTENTS_ID.all"
                 f.write(bdt_utils.pretty_table(cid_dumps[dump], 3))
 
     # if no flags were set, default to "print to many" -- if only -o and/or -s were set, don't print to many.
