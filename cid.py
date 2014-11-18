@@ -1,10 +1,11 @@
+VERSION_STRING = "CID v0.6 - 11/18/2014"
+
 import bdt_utils
 import argparse
 import sys
 import io
 import openpyxl
 
-VERSION_STRING = "CID v0.6 - 11/18/2014"
 HAS_NO_MEDIA = ["scif", "hard_copy", "hardcopy", "synergy"]
 
 
@@ -16,11 +17,13 @@ def extract_part_nums(filename, all_parts=False):
         media_to_skip = HAS_NO_MEDIA
 
     try:
+        # openpyxl is a library for reading/writing Excel files.
         eco_form = openpyxl.load_workbook(filename)
     except openpyxl.exceptions.InvalidFileException:
         print '\nERROR: Could not open ECO form "{}"\n\n       Is path correct?'.format(filename)
         sys.exit(1)
 
+    # ECO form workbook must have a sheet called "PS1"
     pn_sheet = eco_form.get_sheet_by_name('PS1')
     try:
         pn_rows = pn_sheet.rows
@@ -36,20 +39,27 @@ def extract_part_nums(filename, all_parts=False):
     # split PN rows into per-media-type lists
     for row in pn_rows:
         row_num += 1
+
+        # skip header section
         if row_num > 4:
             if row_num == 5 and not pn_sheet['G5'].value:
                 print "\nERROR @ PS1:G5 - First P/N must have a value in media column."
                 exit(1)
             current_media_col = pn_sheet['G'+str(row_num)].value
             prev_media = str(current_media_col).strip().replace(" ", "_").lower()
+
+            # is this a new media type?
             if current_media_col and not prev_media == current_media:
                 current_media = str(current_media_col).strip().replace(" ", "_").lower()
                 if prev_media in media_sets.keys():
                     print "\nERROR @ PS1:G{} - Can't re-use {} after switching to a different type.".format(row_num, current_media)
                     sys.exit(1)
 
+                # if this is a media type we want a CONTENTS_ID for, crate an empty list for it in the media_sets dict
                 if not current_media in media_to_skip:
                     media_sets[current_media] = []
+
+            # if not on skipped media, add the row to the appropriate list in the media_sets dict
             if current_media and not current_media in media_to_skip:
                 media_sets[current_media].append(row)
 
@@ -59,10 +69,13 @@ def extract_part_nums(filename, all_parts=False):
     for set_name in media_sets.keys():
         current_indent_level = 0
         cid_tables[set_name] = []
+        # pn_table is a reference to cid_tables[set_name], not a copy
         pn_table = cid_tables[set_name]
 
         for row in media_sets[set_name]:
             for cell in row:
+
+                # we only care about certain columns
                 if not pn_sheet['A'+str(cell.row)].value or cell.column not in "ABCFG":
                     continue
 
@@ -90,6 +103,7 @@ def extract_part_nums(filename, all_parts=False):
                         exit(1)
                     new_indent_level = cell.style.alignment.indent
 
+                    # this will only happen on the first line
                     if not current_indent_level:
                         current_indent_level = new_indent_level
 
@@ -113,6 +127,7 @@ def extract_part_nums(filename, all_parts=False):
                             if current_media.lower() in media_to_skip:
                                 skip_media = True
                             else:
+                                # if on a new, non-skipped media type, we pre-pend a line with the media type
                                 skip_media = False
                                 hold_row = pn_table.pop()
                                 pn_table.append([current_media, ""])
@@ -126,21 +141,30 @@ def extract_part_nums(filename, all_parts=False):
     #return bdt_utils.pretty_table(pn_table, 4)
 
 
-def print_many_cid_files(contents_id_dump, eol):
+def print_single_cid_file(contents_id_dump, eol):
     current_media = None
 
+    # break contents_id "dump" into a list of lines
     for line in contents_id_dump.split("\n"):
+
+        # only do the following block on non-blank lines
         if line:
+            # create a version of line with leading & trailing spaces removed
             stripped_line = line.strip()
-            if not stripped_line[0].isdigit():
-                if current_media:
-                    output_file.close()
+
+            # does this line not start with a part number?  Then it's a media identifier (CD1, Synergy, etc.).
+            if not stripped_line[0:3].isdigit():
                 current_media = line.strip()
                 print "Creating file CONTENTS_ID." + current_media.replace(" ", "_")
                 output_file = io.open("CONTENTS_ID." + current_media.replace(" ", "_"), "w", newline=eol)
                 continue
-        if current_media:
+
+        try:
+            # write line to file, passes along blank lines, too
             output_file.write(line+"\n")
+        except NameError:
+            print "\nERROR: print_single_cid_file() was passed a dumpfile without a media ID as the first line."
+            exit(1)
 
     if not output_file.closed:
         output_file.close()
@@ -150,9 +174,14 @@ def make_parser():
     """ Construct the command line parser """
     description = VERSION_STRING + " - Create CONTENTS_ID files from PNs on ECO form."
     parser = argparse.ArgumentParser(description=description)
+
+    # -v/--version, like -h/--help, ignores other arguments and prints requested info
     parser.add_argument('-v', '--version', action='version', version=VERSION_STRING)
+
+    # this is a required argument unless -v or -h were used
     parser.add_argument("eco_file", type=str, help="eco form filename, w/ full path if not in current dir")
 
+    # parser.add_argument_group creates a named subgroup, for better organization on help screen
     output_group = parser.add_argument_group('output modes (can be combined)')
     output_group.add_argument('-m', '--print-to-many', action='store_true', default=False,
                         help="print to many files (default)")
@@ -163,32 +192,39 @@ def make_parser():
     output_group.add_argument('-a', '--all-parts', action='store_true', default=False,
                         help="include PNs that aren't on any media")
 
+    # -d & -u are mutually exclusive... can't ask for DOS EOLs *and* UNIX EOLs!
     eol_group = parser.add_mutually_exclusive_group()
-    eol_group.add_argument('-u', '--unix', action='store_true', default=True,
-                       help="use UNIX line endings (default)")
     eol_group.add_argument('-d', '--dos', action='store_true', default=False,
-                       help="use DOS line endings")
+                       help="output files with DOS EOLs (no effect on -s)")
+    eol_group.add_argument('-u', '--unix', action='store_true', default=True,
+                           help="output files with UNIX EOLs (default)")
 
     return parser
 
 
 def main():
+    # "plumbing" for argparse, a standard argument parsing library
     parser = make_parser()
     arguments = parser.parse_args(sys.argv[1:])
+
     # Convert parsed arguments from Namespace to dictionary
     arguments = vars(arguments)
 
+    # Extract ECO spreadsheet PNs in CONTENTS_ID format (returns a dict of multi-line strings, keyed to media type)
     cid_dumps = extract_part_nums(arguments["eco_file"], arguments["all_parts"])
-
-    if arguments["dos"]:
-        eol = '\r\n'
-    else: eol = '\n'
 
     if arguments["screen_print"]:
         for dump in cid_dumps:
             print bdt_utils.pretty_table(cid_dumps[dump], 3)
             print "\n\n"
 
+    # Set file output line endings to requested format.  One (and only one) will always be True.  Default is UNIX.
+    if arguments["dos"]:
+        eol = '\r\n'
+    elif arguments["unix"]:
+        eol = '\n'
+
+    # Combine all CONTENTS_IDs into one document.  Can be combined with -m and/or -s.
     if arguments["print_to_one"]:
         print "Creating file CONTENTS_ID.all"
         with io.open("CONTENTS_ID.all", "w", newline=eol) as f:
@@ -202,7 +238,8 @@ def main():
 
     if arguments["print_to_many"]:
         for dump in cid_dumps:
-            print_many_cid_files(bdt_utils.pretty_table(cid_dumps[dump], 3), eol)
+            # print_single_cid_file outputs everything after the media type line to a CONTENTS_ID.<media type> file.
+            print_single_cid_file(bdt_utils.pretty_table(cid_dumps[dump], 3), eol)
 
 if __name__ == "__main__":
     main()
