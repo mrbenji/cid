@@ -1,4 +1,4 @@
-VERSION_STRING = "CID v0.6 - 11/18/2014"
+VERSION_STRING = "CID v0.7 - 11/18/2014"
 
 import bdt_utils
 import argparse
