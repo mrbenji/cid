@@ -1,4 +1,6 @@
-VERSION_STRING = "CID v0.11 - 11/19/2014"
+VERSION_STRING = "CID v0.12 - 11/19/2014"
+#PNRL_PATH = r"\\us.ray.com\SAS\AST\eng\Operations\CM\Internal\Staff\CM_Submittals\PN_Reserve.xlsm"
+PNRL_PATH = "PN_Reserve_copy.xlsm"
 
 import argparse
 import sys
@@ -12,14 +14,14 @@ import bdt_utils  # Benji's bag-o'-utility-functions
 HAS_NO_MEDIA = ["scif", "hard_copy", "hardcopy", "synergy"]
 
 
-def split_sheet_rows_ps1(pn_sheet, pn_rows, media_to_skip, new_parts_only=False):
+def split_sheet_rows_ps1(pn_sheet, pn_rows, media_to_skip, new_pn_only=False):
     """
     Store rows from PS1 tab of spreadsheet into a dictionary of lists of row objects, keyed by media type.
 
     :param pn_sheet: openpyxl sheet object
     :param pn_rows: openpxyl rows object
     :param media_to_skip: controls which keywords in the media column mark PN blocks to skip
-    :param new_parts_only: if set to True, only new parts will be stored in row lists, and only when they first appear
+    :param new_pn_only: if set to True, only new parts will be stored in row lists, and only when they first appear
     :return: dictionary with lists of row objects, keyed by media type
     """
 
@@ -50,8 +52,8 @@ def split_sheet_rows_ps1(pn_sheet, pn_rows, media_to_skip, new_parts_only=False)
                 if not current_media in media_to_skip:
                     media_sets[current_media] = []
 
-            # if -n/--new-parts-only is set, we need to verify the part is new before adding this row.
-            if new_parts_only and current_media:
+            # if -n/--new-pn-only is set, we need to verify the part is new before adding this row.
+            if new_pn_only and current_media:
                 if pn_sheet['C'+str(row_num)].value and not pn_sheet['E'+str(row_num)].value:
                     media_sets[current_media].append(row)
                 continue
@@ -63,13 +65,57 @@ def split_sheet_rows_ps1(pn_sheet, pn_rows, media_to_skip, new_parts_only=False)
     return media_sets
 
 
-def extract_part_nums_PS1(filename, all_parts=False, new_parts_only=False):
+def extract_part_nums_pnr():
+    """
+    Extract part numbers from the part number reserve log, return them as a dict keyed by P/N
+
+    :return: contents of part number reserve log main worksheet, formatted as a dict.  Values are
+    lists of dicts {rev:ECO}, keys are base p/n.
+    """
+
+    try:
+        # openpyxl is a library for reading/writing Excel files.
+        pnr_log = openpyxl.load_workbook(PNRL_PATH)
+    except openpyxl.exceptions.InvalidFileException:
+        print '\nERROR: Could not open Part Number Reserve Log at path:' \
+              '\n       {}'.format(PNRL_PATH)
+        sys.exit(1)
+
+    # part number reserve workbook must have a sheet called "PN_Rev"
+    pn_sheet = eco_form.get_sheet_by_name('PN_Rev')
+    try:
+        pn_rows = pn_sheet.rows
+    except AttributeError:
+        print '\nERROR: No PN_Rev tab on Part Number Reserve Log at path:' \
+              '\n\n     {}'.format(filename)
+        sys.exit(1)
+
+    row_num = 0
+    part_number_dict = {}
+
+    if not pn_sheet['A1'].value:
+        print "\nERROR: PNR Log, cell A1 - first cell of part number reserve form is blank."
+        exit(1)
+
+    for row in pn_rows:
+        row_num += 1
+        current_pn = pn_sheet['A'+str(row_num)].value
+        current_rev = pn_sheet['C'+str(row_num)].value
+        current_eco = pn_sheet['D'+str(row_num)].value
+
+        if not part_number_dict.has_key(current_pn):
+            part_number_dict[current_pn] = {}
+
+        part_number_dict[current_pn][current_rev]=current_eco
+
+
+def extract_part_nums_PS1(filename, all_parts=False, new_pn_only=False):
     """
     Open ECO spreadsheet, extract part numbers from the PS1 tab
 
     :param filename: full path to a properly formatted ECO spreadsheet with completed PS1 tab
     :param all_parts: if True, all PNs will be extracted, including those that wouldn't actually go on media
-    :param new_parts_only: if True, only new PNs will be extracted, and only the first time the are listed.
+    :param new_pn_only: if True, only new PNs will be extracted, and only the first time the are listed.
     :return: a dict where each value is a table represented by a list of lists, keyed by media type
     """
     if all_parts:
@@ -81,7 +127,8 @@ def extract_part_nums_PS1(filename, all_parts=False, new_parts_only=False):
         # openpyxl is a library for reading/writing Excel files.
         eco_form = openpyxl.load_workbook(filename)
     except openpyxl.exceptions.InvalidFileException:
-        print '\nERROR: Could not open ECO form "{}"\n\n       Is path correct?'.format(filename)
+        print '\nERROR: Could not open ECO form at path:' \
+              '         {}\n\n       Is path correct?'.format(filename)
         sys.exit(1)
 
     # ECO form workbook must have a sheet called "PS1"
@@ -89,11 +136,12 @@ def extract_part_nums_PS1(filename, all_parts=False, new_parts_only=False):
     try:
         pn_rows = pn_sheet.rows
     except AttributeError:
-        print '\nERROR: ECO form "{}" doesn\'t have a "PS1" tab.'.format(filename)
+        print '\nERROR: No "PS1" tab on ECO form at path:' \
+              '         {}'.format(filename)
         sys.exit(1)
 
     # convert pn_sheet.rows into a dict of row object lists, keyed by media keyword
-    media_sets = split_sheet_rows_ps1(pn_sheet, pn_rows, media_to_skip, new_parts_only)
+    media_sets = split_sheet_rows_ps1(pn_sheet, pn_rows, media_to_skip, new_pn_only)
 
     cid_tables = {}
     current_media = ""
@@ -250,17 +298,22 @@ def make_parser():
                         help="print to many files (default)")
     output_group.add_argument('-o', '--print-to-one', action='store_true', default=False,
                               help="print to one file (CONTENTS_ID.all)")
-    output_group.add_argument('-s', '--screen-print', action='store_true', default=False,
-                        help="print to screen")
+    # TURNED THIS ARG OFF FOR NOW, DO WE REALLY NEED IT?
+    # output_group.add_argument('-s', '--screen-print', action='store_true', default=False,
+    #                     help="print to screen")
     output_group.add_argument('-a', '--all-parts', action='store_true', default=False,
                               help="include PNs that aren't on any media")
     output_group.add_argument('-e', type=str, choices=["unix", "dos"], default="unix",
                               help="set EOL type for files (default is unix)")
 
-    special_group = parser.add_argument_group('special modes (these cause output mode arguments to be ignored)')
+    special_group = parser.add_argument_group('special modes (output mode args other than -e will be ignored)')
     special_meg = special_group.add_mutually_exclusive_group()
-    special_meg.add_argument('-n', '--new-parts-only', action='store_true', default=False,
-                             help="print only new parts ()")
+    special_meg.add_argument('-n', '--new-pn-only', action='store_true', default=False,
+                             help="print only new part numbers, to file NEW_PARTS")
+    special_meg.add_argument('-p', '--pnr-verify', action='store_true', default=False,
+                             help="verify ECO PNs vs. Part Number Reserve Log (future)")
+    special_meg.add_argument('-u', '--update-pnr', action='store_true', default=False,
+                             help="update Part Number Reserve Log with ECO PNs (future)")
 
     return parser
 
@@ -278,15 +331,16 @@ def main():
     arguments = vars(arguments)
 
     # -n automatically prints all parts
-    all_parts = arguments["all_parts"] or arguments["new_parts_only"]
+    all_parts = arguments["all_parts"] or arguments["new_pn_only"]
 
     # Extract ECO spreadsheet PNs in CONTENTS_ID format (returns a dict of multi-line strings, keyed to media type)
-    cid_dumps = extract_part_nums_PS1(arguments["eco_file"], all_parts, arguments["new_parts_only"])
+    cid_dumps = extract_part_nums_PS1(arguments["eco_file"], all_parts, arguments["new_pn_only"])
 
-    if arguments["screen_print"]:
-        for dump in cid_dumps:
-            print bdt_utils.pretty_table(cid_dumps[dump], 3)
-            print "\n\n"
+    # TURNED THIS ARG OFF FOR NOW, DO WE REALLY NEED IT?
+    #if arguments["screen_print"]:
+    #    for dump in cid_dumps:
+    #        print bdt_utils.pretty_table(cid_dumps[dump], 3)
+    #        print "\n\n"
 
     # Set file output line endings to requested format.  One (and only one) will always be True.  Default is UNIX.
     if arguments["e"] == "dos":
@@ -294,7 +348,7 @@ def main():
     elif arguments["e"] == "unix":
         eol = '\n'
 
-    if arguments["new_parts_only"]:
+    if arguments["new_pn_only"]:
         print "\nCreating file NEW_PARTS...",
         with io.open("NEW_PARTS", "w", newline=eol) as f:
             f.write(u"NOTE: This file lists only the new, unique parts on this ECO. Duplicate and previously-released\n"
@@ -305,6 +359,8 @@ def main():
                 if cid_dumps[dump]:
                     f.write(bdt_utils.pretty_table(cid_dumps[dump], 3))
                     f.write(u"\n\n")
+    elif arguments["pnr_verify"]:
+        print "\nThis feature is not yet implemented."
     else:
         # Combine all CONTENTS_IDs into one document.  Can be combined with -m and/or -s.
         if arguments["print_to_one"]:
@@ -314,8 +370,8 @@ def main():
                     f.write(bdt_utils.pretty_table(cid_dumps[dump], 3))
                     f.write(u"\n\n")
 
-        # if no flags were set, default to "print to many" -- if only -o and/or -s were set, don't print to many.
-        if not arguments["screen_print"] and not arguments["print_to_one"] and not arguments["print_to_many"]:
+        # if only -o was set, don't print to many.
+        if not arguments["print_to_one"] and not arguments["print_to_many"]:
             arguments["print_to_many"] = True
 
         if arguments["print_to_many"]:
