@@ -1,4 +1,4 @@
-VERSION_STRING = "CID v0.9 - 11/18/2014"
+VERSION_STRING = "CID v0.10 - 11/19/2014"
 
 import argparse
 import sys
@@ -62,6 +62,7 @@ def extract_part_nums(filename, all_parts=False, new_parts_only=False):
                 if not current_media in media_to_skip:
                     media_sets[current_media] = []
 
+            # if -n/--new-parts-only is set, we need to verify the part is new before adding this row.
             if new_parts_only and current_media:
                 if pn_sheet['C'+str(row_num)].value and not pn_sheet['E'+str(row_num)].value:
                     media_sets[current_media].append(row)
@@ -256,8 +257,12 @@ def main():
         eol = '\n'
 
     if arguments["new_parts_only"]:
-        print "\nCreating file CONTENTS_ID.new...",
-        with io.open("CONTENTS_ID.new", "w", newline=eol) as f:
+        print "\nCreating file NEW_PARTS...",
+        with io.open("NEW_PARTS", "w", newline=eol) as f:
+            f.write(u"NOTE: This file lists only the new, unique parts on this ECO. Duplicate and previously-released\n"
+                    u"parts are not included.  Nesting is preserved (ex. 065s are indented under the first 139 they\n"
+                    u"are affiliated with).  Be aware that you may not be seeing all members of a 139/142/etc., since\n"
+                    u"previously-released parts, or parts already displayed under earlier 139s/etc., will be missing.\n\n")
             for dump in cid_dumps:
                 if cid_dumps[dump]:
                     f.write(bdt_utils.pretty_table(cid_dumps[dump], 3))
