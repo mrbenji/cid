@@ -12,7 +12,7 @@ import bdt_utils  # Benji's bag-o'-utility-functions
 HAS_NO_MEDIA = ["scif", "hard_copy", "hardcopy", "synergy"]
 
 
-def split_sheet_rows_PS1(pn_sheet, pn_rows, media_to_skip, new_parts_only=False):
+def split_sheet_rows_ps1(pn_sheet, pn_rows, media_to_skip, new_parts_only=False):
     """
     Store rows from PS1 tab of spreadsheet into a dictionary of lists of row objects, keyed by media type.
 
@@ -26,7 +26,6 @@ def split_sheet_rows_PS1(pn_sheet, pn_rows, media_to_skip, new_parts_only=False)
     row_num = 0
     current_media = ""
     media_sets = {}
-    skip_media = False
 
     # split PN rows into per-media-type lists
     for row in pn_rows:
@@ -67,6 +66,7 @@ def split_sheet_rows_PS1(pn_sheet, pn_rows, media_to_skip, new_parts_only=False)
 def extract_part_nums_PS1(filename, all_parts=False, new_parts_only=False):
     """
     Open ECO spreadsheet, extract part numbers from the PS1 tab
+
     :param filename: full path to a properly formatted ECO spreadsheet with completed PS1 tab
     :param all_parts: if True, all PNs will be extracted, including those that wouldn't actually go on media
     :param new_parts_only: if True, only new PNs will be extracted, and only the first time the are listed.
@@ -93,12 +93,13 @@ def extract_part_nums_PS1(filename, all_parts=False, new_parts_only=False):
         sys.exit(1)
 
     # convert pn_sheet.rows into a dict of row object lists, keyed by media keyword
-    media_sets = split_sheet_rows_PS1(pn_sheet, pn_rows, media_to_skip, new_parts_only)
+    media_sets = split_sheet_rows_ps1(pn_sheet, pn_rows, media_to_skip, new_parts_only)
 
     cid_tables = {}
     current_media = ""
     current_pn = ""
     used_part_numbers = {}
+    skip_media = False
 
     for set_name in media_sets.keys():
         current_indent_level = 0
@@ -195,6 +196,7 @@ def extract_part_nums_PS1(filename, all_parts=False, new_parts_only=False):
 def write_single_cid_file(contents_id_dump, eol):
     """
     Write the contents of a table to a file
+
     :param contents_id_dump: a table of part numbers, formatted into a multi-line string by bdt.pretty_table()
     :param eol: the end of line format to use, will be \n for UNIX, \r\n for DOS.
     """
@@ -230,6 +232,7 @@ def write_single_cid_file(contents_id_dump, eol):
 def make_parser():
     """
     Construct a command-line parser for the script, using the build-in argparse library
+
     :return: an argparse parser object
     """
     description = VERSION_STRING + " - Create CONTENTS_ID files from PNs on ECO form."
