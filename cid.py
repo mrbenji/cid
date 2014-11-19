@@ -1,4 +1,4 @@
-VERSION_STRING = "CID v0.10 - 11/19/2014"
+VERSION_STRING = "CID v0.11 - 11/19/2014"
 
 import argparse
 import sys
@@ -12,27 +12,16 @@ import bdt_utils  # Benji's bag-o'-utility-functions
 HAS_NO_MEDIA = ["scif", "hard_copy", "hardcopy", "synergy"]
 
 
-def extract_part_nums(filename, all_parts=False, new_parts_only=False):
+def split_sheet_rows_PS1(pn_sheet, pn_rows, media_to_skip, new_parts_only=False):
+    """
+    Store rows from PS1 tab of spreadsheet into a dictionary of lists of row objects, keyed by media type.
 
-    if all_parts:
-        media_to_skip = []
-    else:
-        media_to_skip = HAS_NO_MEDIA
-
-    try:
-        # openpyxl is a library for reading/writing Excel files.
-        eco_form = openpyxl.load_workbook(filename)
-    except openpyxl.exceptions.InvalidFileException:
-        print '\nERROR: Could not open ECO form "{}"\n\n       Is path correct?'.format(filename)
-        sys.exit(1)
-
-    # ECO form workbook must have a sheet called "PS1"
-    pn_sheet = eco_form.get_sheet_by_name('PS1')
-    try:
-        pn_rows = pn_sheet.rows
-    except AttributeError:
-        print '\nERROR: ECO form "{}" doesn\'t have a "PS1" tab.'.format(filename)
-        sys.exit(1)
+    :param pn_sheet: openpyxl sheet object
+    :param pn_rows: openpxyl rows object
+    :param media_to_skip: controls which keywords in the media column mark PN blocks to skip
+    :param new_parts_only: if set to True, only new parts will be stored in row lists, and only when they first appear
+    :return: dictionary with lists of row objects, keyed by media type
+    """
 
     row_num = 0
     current_media = ""
@@ -71,6 +60,40 @@ def extract_part_nums(filename, all_parts=False, new_parts_only=False):
             # if not on skipped media, add the row to the appropriate list in the media_sets dict
             if current_media and not current_media in media_to_skip:
                     media_sets[current_media].append(row)
+
+    return media_sets
+
+
+def extract_part_nums_PS1(filename, all_parts=False, new_parts_only=False):
+    """
+    Open ECO spreadsheet, extract part numbers from the PS1 tab
+    :param filename: full path to a properly formatted ECO spreadsheet with completed PS1 tab
+    :param all_parts: if True, all PNs will be extracted, including those that wouldn't actually go on media
+    :param new_parts_only: if True, only new PNs will be extracted, and only the first time the are listed.
+    :return: a dict where each value is a table represented by a list of lists, keyed by media type
+    """
+    if all_parts:
+        media_to_skip = []
+    else:
+        media_to_skip = HAS_NO_MEDIA
+
+    try:
+        # openpyxl is a library for reading/writing Excel files.
+        eco_form = openpyxl.load_workbook(filename)
+    except openpyxl.exceptions.InvalidFileException:
+        print '\nERROR: Could not open ECO form "{}"\n\n       Is path correct?'.format(filename)
+        sys.exit(1)
+
+    # ECO form workbook must have a sheet called "PS1"
+    pn_sheet = eco_form.get_sheet_by_name('PS1')
+    try:
+        pn_rows = pn_sheet.rows
+    except AttributeError:
+        print '\nERROR: ECO form "{}" doesn\'t have a "PS1" tab.'.format(filename)
+        sys.exit(1)
+
+    # convert pn_sheet.rows into a dict of row object lists, keyed by media keyword
+    media_sets = split_sheet_rows_PS1(pn_sheet, pn_rows, media_to_skip, new_parts_only)
 
     cid_tables = {}
     current_media = ""
@@ -167,10 +190,14 @@ def extract_part_nums(filename, all_parts=False, new_parts_only=False):
                         pn_table.pop()
 
     return cid_tables
-    #return bdt_utils.pretty_table(pn_table, 4)
 
 
-def print_single_cid_file(contents_id_dump, eol):
+def write_single_cid_file(contents_id_dump, eol):
+    """
+    Write the contents of a table to a file
+    :param contents_id_dump: a table of part numbers, formatted into a multi-line string by bdt.pretty_table()
+    :param eol: the end of line format to use, will be \n for UNIX, \r\n for DOS.
+    """
     current_media = None
 
     # break contents_id "dump" into a list of lines
@@ -181,7 +208,8 @@ def print_single_cid_file(contents_id_dump, eol):
             # create a version of line with leading & trailing spaces removed
             stripped_line = line.strip()
 
-            # does this line not start with a part number?  Then it's a media identifier (CD1, Synergy, etc.).
+            # does this line not start with a part number?  Then it's a media identifier (CD1, Synergy, etc.)
+            # that should be used to name the file, but not be written to the file.
             if not stripped_line[0:3].isdigit():
                 current_media = line.strip()
                 print "Creating file CONTENTS_ID.{}...".format(current_media.replace(" ", "_"))
@@ -192,7 +220,7 @@ def print_single_cid_file(contents_id_dump, eol):
             # write line to file, passes along blank lines, too
             output_file.write(line+"\n")
         except NameError:
-            print "\nERROR: print_single_cid_file() was passed a dumpfile without a media ID as the first line."
+            print "\nERROR: write_single_cid_file() was passed a dumpfile without a media ID as the first line."
             exit(1)
 
     if not output_file.closed:
@@ -200,7 +228,10 @@ def print_single_cid_file(contents_id_dump, eol):
 
 
 def make_parser():
-    """ Construct the command line parser """
+    """
+    Construct a command-line parser for the script, using the build-in argparse library
+    :return: an argparse parser object
+    """
     description = VERSION_STRING + " - Create CONTENTS_ID files from PNs on ECO form."
     parser = argparse.ArgumentParser(description=description)
 
@@ -232,6 +263,10 @@ def make_parser():
 
 
 def main():
+    """
+    Command line execution starts here.
+    """
+
     # "plumbing" for argparse, a standard argument parsing library
     parser = make_parser()
     arguments = parser.parse_args(sys.argv[1:])
@@ -243,7 +278,7 @@ def main():
     all_parts = arguments["all_parts"] or arguments["new_parts_only"]
 
     # Extract ECO spreadsheet PNs in CONTENTS_ID format (returns a dict of multi-line strings, keyed to media type)
-    cid_dumps = extract_part_nums(arguments["eco_file"], all_parts, arguments["new_parts_only"])
+    cid_dumps = extract_part_nums_PS1(arguments["eco_file"], all_parts, arguments["new_parts_only"])
 
     if arguments["screen_print"]:
         for dump in cid_dumps:
@@ -283,8 +318,8 @@ def main():
         if arguments["print_to_many"]:
             print "\n"
             for dump in cid_dumps:
-                # print_single_cid_file outputs everything after the media type line to a CONTENTS_ID.<media type> file.
-                print_single_cid_file(bdt_utils.pretty_table(cid_dumps[dump], 3), eol)
+                # write_single_cid_file outputs everything after the media type line to a CONTENTS_ID.<media type> file.
+                write_single_cid_file(bdt_utils.pretty_table(cid_dumps[dump], 3), eol)
 
 
 if __name__ == "__main__":
