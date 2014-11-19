@@ -3,7 +3,7 @@ VERSION_STRING = "CID v0.11 - 11/19/2014"
 import argparse
 import sys
 import io
-import openpyxl   # non-standard open source library
+import openpyxl   # third party open source library, https://openpyxl.readthedocs.org/en/latest/
 import bdt_utils  # Benji's bag-o'-utility-functions
 
 # HAS_NO_MEDIA is a list of "media" tags used for P/Ns that are not put on any official media.  By default
