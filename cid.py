@@ -15,10 +15,6 @@ import bdt_utils    # Benji's bag-o'-utility-functions
 HAS_NO_MEDIA = ["scif", "hard_copy", "hardcopy", "synergy"]
 
 
-def revision_compare(rev1, rev2):
-    pass
-
-
 def split_sheet_rows_ps1(pn_sheet, pn_rows, media_to_skip, new_pn_only=False):
     """
     Store rows from PS1 tab of spreadsheet into a dictionary of lists of row objects, keyed by media type.

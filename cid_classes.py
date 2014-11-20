@@ -89,20 +89,20 @@ class Rev(object):
 
 
 class Part(object):
-    def __init__(self, number, revs, version, description):
+    def __init__(self, number, revs=[]):
         self.number = str(number)
         self.revs = list(revs)
-        self.version = str(version)
-        self.description = str(description)
         self.max_rev = None
 
-class ListOfParts(object):
-    def __init__(self, parts):
-        self.parts = list(parts)
 
-    def add_part(self, part, rev, version="", description=""):
-        new_part = Part(part, rev, version, description)
-        self.parts.append(new_part)
+class ListOfParts(object):
+    def __init__(self, parts={}):
+        self.parts = parts
+
+    def add_part(self, pn, rev):
+
+        if pn in self.parts.keys():
+            self.parts[pn].revs.append(Rev(rev)))
 
     def part_max_rev(self, part):
         pass
