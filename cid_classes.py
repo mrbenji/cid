@@ -1,8 +1,8 @@
 from functools import total_ordering
 import string
 
-# the chars in REV_INDEX are all the valid options for positions in the rev
-REV_INDEX = "-123456789ABCDEFGHJKLMNPRTUVWY"
+# the chars in VALID_REV_CHARS are all the valid options for positions in the rev
+VALID_REV_CHARS = "-123456789ABCDEFGHJKLMNPRTUVWY"
 
 
 def is_valid_rev(rev_text):
@@ -16,7 +16,7 @@ def is_valid_rev(rev_text):
 
     for char in rev_text:
 
-        if not char in REV_INDEX:
+        if not char in VALID_REV_CHARS:
             return False
 
         # the dash character is only valid if it's the only character in the rev
@@ -68,7 +68,7 @@ class Rev(object):
                 continue
 
             # if the current letters don't match, the one with the greater index number is greater
-            return REV_INDEX.find(self.name[position]) > REV_INDEX.find(other.name[position])
+            return VALID_REV_CHARS.find(self.name[position]) > VALID_REV_CHARS.find(other.name[position])
 
         return False
 
