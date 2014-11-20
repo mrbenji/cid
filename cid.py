@@ -83,12 +83,12 @@ def extract_part_nums_pnr():
         sys.exit(1)
 
     # part number reserve workbook must have a sheet called "PN_Rev"
-    pn_sheet = eco_form.get_sheet_by_name('PN_Rev')
+    pn_sheet = pnr_log.get_sheet_by_name('PN_Rev')
     try:
         pn_rows = pn_sheet.rows
     except AttributeError:
         print '\nERROR: No PN_Rev tab on Part Number Reserve Log at path:' \
-              '\n\n     {}'.format(filename)
+              '\n\n     {}'.format(PNRL_PATH)
         sys.exit(1)
 
     row_num = 0

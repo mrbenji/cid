@@ -30,10 +30,19 @@ class CidClassesTest(unittest.TestCase):
         self.assertTrue(Rev("B2") != Rev("B"))
 
     def test_invalid_revs(self):
+        print 'Verifying that revs are being properly flagged as invalid...'
         for bad_rev in ["I", "AZ", "11", "B21", "1B1", "-A", "1C"]:
+            print " {}".format(bad_rev),
             with self.assertRaises(ValueError):
-                print 'Verifying that Rev. {} is properly flagged as invalid...'.format(bad_rev)
                 Rev(bad_rev)
+        print "\n"
+
+    def test_next_rev(self):
+        self.assertEqual(Rev("A").next_rev(), Rev("B"))
+        self.assertEqual(Rev("H").next_rev(), Rev("J"))
+        self.assertEqual(Rev("-").next_rev(), Rev("A"))
+        self.assertEqual(Rev("1").next_rev(), Rev("A"))
+        self.assertEqual(Rev("5").next_rev(), Rev("A"))
 
 if __name__ == "__main__":
     unittest.main()

@@ -8,7 +8,7 @@ VALID_REV_CHARS = "-123456789ABCDEFGHJKLMNPRTUVWY"
 def is_valid_rev(rev_text):
 
     # valid revs must be non-zero-length strings
-    if not isinstance(rev_text, str) and len(rev_text)>0:
+    if not len(rev_text) or not isinstance(rev_text, str):
         return False
 
     # we start by assuming there are no digits in this rev
@@ -73,8 +73,17 @@ class Rev(object):
         return False
 
     def next_rev(self):
-        if self < Rev("Y"):
-            return
+
+        if VALID_REV_CHARS.find(self.name[-1]) < 10:
+            new_name = self.name[0:-1] + "A"
+            return Rev(new_name)
+
+        if VALID_REV_CHARS.find(self.name[-1]) < 30:
+            return Rev(VALID_REV_CHARS[VALID_REV_CHARS.find(self.name) + 1])
+
+        if self.name[-1] == "Y":
+            new_name = self.name[0:-1] + "AA"
+            return Rev(new_name)
 
 
 class Part(object):
