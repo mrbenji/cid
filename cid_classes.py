@@ -1,19 +1,9 @@
 from functools import total_ordering
 import string
 
-# the following revision letters are not valid
-INVALID_REVS = ["I", "O", "Q", "S", "X", "Z"]
-BETA_REVS = [str(x) for x in range (1,10)]
+# the chars in REV_INDEX are all the valid options for positions in the rev
+REV_INDEX = "-123456789ABCDEFGHJKLMNPRTUVWY"
 
-REV_INDEX = {'-':0}
-for x in range(1,10):
-    REV_INDEX[str(x)] = x
-
-i = 10
-for x in string.ascii_uppercase:
-    if x not in INVALID_REVS:
-        REV_INDEX[x] = i
-    i += 1
 
 def is_valid_rev(rev_text):
 
@@ -26,8 +16,7 @@ def is_valid_rev(rev_text):
 
     for char in rev_text:
 
-        # the keys of REV_INDEX are all the valid options for positions in the rev
-        if not char in REV_INDEX.keys():
+        if not char in REV_INDEX:
             return False
 
         # the dash character is only valid if it's the only character in the rev
@@ -78,14 +67,14 @@ class Rev(object):
             if self.name[position] == other.name[position]:
                 continue
 
-            #
-            if REV_INDEX[self.name[position]] > REV_INDEX[other.name[position]]:
-                return True
+            # if the current letters don't match, the one with the greater index number is greater
+            return REV_INDEX.find(self.name[position]) > REV_INDEX.find(other.name[position])
 
         return False
 
     def next_rev(self):
-        pass
+        if self < Rev("Y"):
+            return
 
 
 class Part(object):
@@ -102,7 +91,7 @@ class ListOfParts(object):
     def add_part(self, pn, rev):
 
         if pn in self.parts.keys():
-            self.parts[pn].revs.append(Rev(rev)))
+            self.parts[pn].revs.append(Rev(rev))
 
     def part_max_rev(self, part):
         pass
