@@ -8,6 +8,7 @@ class CidClassesTest(unittest.TestCase):
         self.assertTrue(Rev("G") > Rev("A"))
         self.assertTrue(Rev("G") == Rev("G"))
         self.assertTrue(Rev("Y") < Rev("AA"))
+        self.assertTrue(Rev("AAB") > Rev("AAA"))
 
     def test_numeric_revs(self):
         self.assertTrue(Rev("1") < Rev("5"))
@@ -16,6 +17,7 @@ class CidClassesTest(unittest.TestCase):
     def test_alphanumeric_revs(self):
         self.assertTrue(Rev("B1") < Rev("B2"))
         self.assertTrue(Rev("C5") > Rev("B2"))
+        self.assertTrue(Rev("B1") == Rev("B1"))
 
     def test_mixed_revs(self):
         self.assertTrue(Rev("B") > Rev("1"))
@@ -25,12 +27,13 @@ class CidClassesTest(unittest.TestCase):
         self.assertTrue(Rev("-") < Rev("1"))
         self.assertTrue(Rev("-") < Rev("A"))
         self.assertTrue(Rev("C5") > Rev("-"))
+        self.assertTrue(Rev("B2") != Rev("B"))
 
     def test_invalid_revs(self):
-        for bad_rev in ["BO", "I", "AZ", "11", "B21", "1B1", "-A"]:
+        for bad_rev in ["I", "AZ", "11", "B21", "1B1", "-A", "1C"]:
             with self.assertRaises(ValueError):
-                print 'Verifying that Rev. {} is properly flagged as "bad"...'.format(bad_rev)
-                next_rev=Rev(bad_rev)
+                print 'Verifying that Rev. {} is properly flagged as invalid...'.format(bad_rev)
+                Rev(bad_rev)
 
 if __name__ == "__main__":
     unittest.main()

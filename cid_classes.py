@@ -40,6 +40,10 @@ def is_valid_rev(rev_text):
                 return False
             else: rev_has_digit = True
 
+        # letters can't follow digits in a revision
+        if char.isalpha() and rev_has_digit:
+            return False
+
     return True
 
 @total_ordering
