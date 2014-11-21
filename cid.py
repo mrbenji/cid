@@ -104,7 +104,7 @@ def extract_part_nums_pnr():
         current_rev = pn_sheet['C'+str(row_num)].value
         current_eco = pn_sheet['D'+str(row_num)].value
 
-        if not part_number_dict.has_key(current_pn):
+        if not current_pn in part_number_dict:
             part_number_dict[current_pn] = {}
 
         part_number_dict[current_pn][current_rev] = current_eco

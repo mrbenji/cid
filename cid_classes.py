@@ -5,11 +5,44 @@ import re
 # the chars in VALID_REV_CHARS are all the valid options for positions in the rev
 VALID_REV_CHARS = "-123456789ABCDEFGHJKLMNPRTUVWY"
 
+
+def is_valid_rev(rev_text):
+
+    # valid revs must be non-zero-length strings
+    if not len(rev_text) or not isinstance(rev_text, str):
+        return False
+
+    # we start by assuming there are no digits in this rev
+    rev_has_digit = False
+
+    for char in rev_text:
+
+        if not char in VALID_REV_CHARS:
+            return False
+
+        # the dash character is only valid if it's the only character in the rev
+        if char == "-" and len(rev_text)>1:
+            return False
+
+        # non-redline revisions cannot contain more than one digit
+        if char.isdigit():
+            if rev_has_digit:
+                return False
+            else:
+                rev_has_digit = True
+
+        # letters can't follow digits in a revision
+        if char.isalpha() and rev_has_digit:
+            return False
+
+    return True
+
+
 @total_ordering
 class Rev(object):
     def __init__(self, name):
         self.name = str(name)
-        if not self.is_valid_rev(name):
+        if not is_valid_rev(name):
             raise ValueError(str(name).strip() + " is not a valid rev!")
 
     def __eq__(self, other):
@@ -28,12 +61,13 @@ class Rev(object):
         for position in range(len(self.name)):
             # if we've moved past the first position and only one operand has a value, we know that the operand
             # of greater length is the larger one.  Ex. B1 is greater than B, and C is not greater than CA.
-            if len(other.name) <= position and len(self.name) > position:
+            if len(other.name) <= position < len(self.name):
                 return True
-            if len(self.name) <= position and len(other.name) > position:
-               return False
+            if len(self.name) <= position:
+                if len(other.name) > position:
+                   return False
 
-            # if the first letters match, skip to the next letter
+                # if the first letters match, skip to the next letter
             if self.name[position] == other.name[position]:
                 continue
 
@@ -42,42 +76,12 @@ class Rev(object):
 
         return False
 
-    def is_valid_rev(self, rev_text):
-
-        # valid revs must be non-zero-length strings
-        if not len(rev_text) or not isinstance(rev_text, str):
-            return False
-
-        # we start by assuming there are no digits in this rev
-        rev_has_digit = False
-
-        for char in rev_text:
-
-            if not char in VALID_REV_CHARS:
-                return False
-
-            # the dash character is only valid if it's the only character in the rev
-            if char == "-" and len(rev_text)>1:
-                return False
-
-            # non-redline revisions cannot contain more than one digit
-            if char.isdigit():
-                if rev_has_digit:
-                    return False
-                else: rev_has_digit = True
-
-            # letters can't follow digits in a revision
-            if char.isalpha() and rev_has_digit:
-                return False
-
-        return True
-
     def next_rev(self):
 
         if VALID_REV_CHARS.find(self.name) in range (0,10):
             return Rev("A")
 
-        if VALID_REV_CHARS.find(self.name[-1]) in range (0,10):
+        if VALID_REV_CHARS.find(self.name[-1]) in range(0,10):
             new_name = self.name[:-2] + VALID_REV_CHARS[VALID_REV_CHARS.find(self.name[-2:-1])+1]
             return Rev(new_name)
 
@@ -92,6 +96,7 @@ class Rev(object):
 
 # a compiled regular expression for the RAST part number format
 PN_RE = re.compile(r'^\d\d\d\-\d\d\d\d\d\d-\d\d$')
+
 
 def is_valid_part(pn_text):
     if not isinstance(pn_text, str):
@@ -112,7 +117,8 @@ class Part(object):
             raise ValueError(str(number).strip() + " is not a valid part number!")
 
     def has_rev(self, rev_text):
-        return self.revs.has_key(rev_text)
+        # returns True or False, based on whether or not rev_text is one of self.rev's keys
+        return rev_text in self.revs
 
     def add_rev(self, rev_text):
         if self.has_rev(rev_text):
