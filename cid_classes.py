@@ -5,41 +5,12 @@ import string
 VALID_REV_CHARS = "-123456789ABCDEFGHJKLMNPRTUVWY"
 
 
-def is_valid_rev(rev_text):
-
-    # valid revs must be non-zero-length strings
-    if not len(rev_text) or not isinstance(rev_text, str):
-        return False
-
-    # we start by assuming there are no digits in this rev
-    rev_has_digit = False
-
-    for char in rev_text:
-
-        if not char in VALID_REV_CHARS:
-            return False
-
-        # the dash character is only valid if it's the only character in the rev
-        if char == "-" and len(rev_text)>1:
-            return False
-
-        # non-redline revisions cannot contain more than one digit
-        if char.isdigit():
-            if rev_has_digit:
-                return False
-            else: rev_has_digit = True
-
-        # letters can't follow digits in a revision
-        if char.isalpha() and rev_has_digit:
-            return False
-
-    return True
 
 @total_ordering
 class Rev(object):
     def __init__(self, name):
         self.name = str(name)
-        if not is_valid_rev(name):
+        if not self.is_valid_rev(name):
             raise ValueError(str(name).strip() + " is not a valid rev!")
 
     def __eq__(self, other):
@@ -71,6 +42,36 @@ class Rev(object):
             return VALID_REV_CHARS.find(self.name[position]) > VALID_REV_CHARS.find(other.name[position])
 
         return False
+
+    def is_valid_rev(self, rev_text):
+
+        # valid revs must be non-zero-length strings
+        if not len(rev_text) or not isinstance(rev_text, str):
+            return False
+
+        # we start by assuming there are no digits in this rev
+        rev_has_digit = False
+
+        for char in rev_text:
+
+            if not char in VALID_REV_CHARS:
+                return False
+
+            # the dash character is only valid if it's the only character in the rev
+            if char == "-" and len(rev_text)>1:
+                return False
+
+            # non-redline revisions cannot contain more than one digit
+            if char.isdigit():
+                if rev_has_digit:
+                    return False
+                else: rev_has_digit = True
+
+            # letters can't follow digits in a revision
+            if char.isalpha() and rev_has_digit:
+                return False
+
+        return True
 
     def next_rev(self):
 
