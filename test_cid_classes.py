@@ -113,10 +113,15 @@ class CidClassesTest(unittest.TestCase):
         my_list = ListOfParts()
 
         my_list.add_part("987-654321-01", "A")
+        my_list.add_part("040-108900-00", "C1")
         my_list.add_part("123-123123-11", "Y")
 
         self.assertEqual(my_list.next_rev("987-654321-01").name, "B")
+        self.assertEqual(my_list.next_rev("040-108900-00").name, "D")
         self.assertEqual(my_list.next_rev("123-123123-11").name, "AA")
+
+        # when a part isn't in the ListOfParts object, return "-" as the "next part
+        self.assertEqual(my_list.next_rev("001-100100-00").name, "-")
 
 
 if __name__ == "__main__":

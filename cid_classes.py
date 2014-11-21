@@ -160,10 +160,10 @@ class ListOfParts(object):
 
     def next_rev(self, pn):
         if not is_valid_part(pn):
-            return ""
+            return None
 
-        if not pn in self.parts.keys():
-            return "-"
+        if not pn in self.parts:
+            return Rev("-")
 
         return self.parts[pn].max_rev.next_rev
 
