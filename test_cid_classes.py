@@ -43,6 +43,9 @@ class CidClassesTest(unittest.TestCase):
         self.assertEqual(Rev("-").next_rev(), Rev("A"))
         self.assertEqual(Rev("1").next_rev(), Rev("A"))
         self.assertEqual(Rev("5").next_rev(), Rev("A"))
+        self.assertEqual(Rev("Y").next_rev(), Rev("AA"))
+        self.assertEqual(Rev("B1").next_rev(), Rev("C"))
+        self.assertEqual(Rev("CA7").next_rev(), Rev("CB"))
 
 if __name__ == "__main__":
     unittest.main()

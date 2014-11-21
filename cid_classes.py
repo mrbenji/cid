@@ -74,12 +74,16 @@ class Rev(object):
 
     def next_rev(self):
 
-        if VALID_REV_CHARS.find(self.name[-1]) < 10:
-            new_name = self.name[0:-1] + "A"
+        if VALID_REV_CHARS.find(self.name) in range (0,10):
+            return Rev("A")
+
+        if VALID_REV_CHARS.find(self.name[-1]) in range (0,10):
+            new_name = self.name[:-2] + VALID_REV_CHARS[VALID_REV_CHARS.find(self.name[-2:-1])+1]
             return Rev(new_name)
 
-        if VALID_REV_CHARS.find(self.name[-1]) < 30:
-            return Rev(VALID_REV_CHARS[VALID_REV_CHARS.find(self.name) + 1])
+        if VALID_REV_CHARS.find(self.name[-1]) < 29:
+            new_name = self.name[0:-1] + VALID_REV_CHARS[VALID_REV_CHARS.find(self.name[-1]) + 1]
+            return Rev(new_name)
 
         if self.name[-1] == "Y":
             new_name = self.name[0:-1] + "AA"
