@@ -38,14 +38,14 @@ class CidClassesTest(unittest.TestCase):
         print "\n"
 
     def test_next_rev(self):
-        self.assertEqual(Rev("A").next_rev(), Rev("B"))
-        self.assertEqual(Rev("H").next_rev(), Rev("J"))
-        self.assertEqual(Rev("-").next_rev(), Rev("A"))
-        self.assertEqual(Rev("1").next_rev(), Rev("A"))
-        self.assertEqual(Rev("5").next_rev(), Rev("A"))
-        self.assertEqual(Rev("Y").next_rev(), Rev("AA"))
-        self.assertEqual(Rev("B1").next_rev(), Rev("C"))
-        self.assertEqual(Rev("CA7").next_rev(), Rev("CB"))
+        self.assertEqual(Rev("A").next_rev, Rev("B"))
+        self.assertEqual(Rev("H").next_rev, Rev("J"))
+        self.assertEqual(Rev("-").next_rev, Rev("A"))
+        self.assertEqual(Rev("1").next_rev, Rev("A"))
+        self.assertEqual(Rev("5").next_rev, Rev("A"))
+        self.assertEqual(Rev("Y").next_rev, Rev("AA"))
+        self.assertEqual(Rev("B1").next_rev, Rev("C"))
+        self.assertEqual(Rev("CA7").next_rev, Rev("CB"))
 
     def test_valid_part_numbers(self):
         self.assertEqual(Part("123-456789-01").number, "123-456789-01")
@@ -64,7 +64,7 @@ class CidClassesTest(unittest.TestCase):
 
         # we haven't added any revs... these should all return False
         self.assertFalse(my_part.has_rev("A"))
-        self.assertFalse(my_part.revs.has_key("B1"))
+        self.assertFalse("B1" in my_part.revs)
         self.assertFalse(my_part.has_rev("C"))
 
         # add_rev should return True if add was successful
@@ -77,9 +77,9 @@ class CidClassesTest(unittest.TestCase):
         self.assertFalse(my_part.add_rev("B1"))
         self.assertFalse(my_part.add_rev("C"))
 
-        # if the rev was added, has_key(rev) should return True
+        # if the rev was added, these should return True
         self.assertTrue(my_part.has_rev("A"))
-        self.assertTrue(my_part.revs.has_key("B1"))
+        self.assertTrue("B1" in my_part.revs)
         self.assertTrue(my_part.has_rev("C"))
 
         # add_rev should raise a ValueError if we attempt to add an invalid rev.

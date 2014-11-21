@@ -249,7 +249,6 @@ def write_single_cid_file(contents_id_dump, eol):
     :param contents_id_dump: a table of part numbers, formatted into a multi-line string by bdt.pretty_table()
     :param eol: the end of line format to use, will be \n for UNIX, \r\n for DOS.
     """
-    current_media = None
 
     # break contents_id "dump" into a list of lines
     for line in contents_id_dump.split("\n"):
@@ -296,7 +295,7 @@ def make_parser():
     # parser.add_argument_group creates a named subgroup, for better organization on help screen
     output_group = parser.add_argument_group('output modes (can be combined)')
     output_group.add_argument('-m', '--print-to-many', action='store_true', default=False,
-                        help="print to many files (default)")
+                              help="print to many files (default)")
     output_group.add_argument('-o', '--print-to-one', action='store_true', default=False,
                               help="print to one file (CONTENTS_ID.all)")
     # TURNED THIS ARG OFF FOR NOW, DO WE REALLY NEED IT?
@@ -346,7 +345,7 @@ def main():
     # Set file output line endings to requested format.  One (and only one) will always be True.  Default is UNIX.
     if arguments["e"] == "dos":
         eol = '\r\n'
-    elif arguments["e"] == "unix":
+    else:
         eol = '\n'
 
     if arguments["new_pn_only"]:

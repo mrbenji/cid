@@ -21,7 +21,7 @@ def is_valid_rev(rev_text):
             return False
 
         # the dash character is only valid if it's the only character in the rev
-        if char == "-" and len(rev_text)>1:
+        if char == "-" and len(rev_text) > 1:
             return False
 
         # non-redline revisions cannot contain more than one digit
@@ -65,7 +65,7 @@ class Rev(object):
                 return True
             if len(self.name) <= position:
                 if len(other.name) > position:
-                   return False
+                    return False
 
                 # if the first letters match, skip to the next letter
             if self.name[position] == other.name[position]:
@@ -76,12 +76,13 @@ class Rev(object):
 
         return False
 
+    @property
     def next_rev(self):
 
-        if VALID_REV_CHARS.find(self.name) in range (0,10):
+        if VALID_REV_CHARS.find(self.name) in range(0, 10):
             return Rev("A")
 
-        if VALID_REV_CHARS.find(self.name[-1]) in range(0,10):
+        if VALID_REV_CHARS.find(self.name[-1]) in range(0, 10):
             new_name = self.name[:-2] + VALID_REV_CHARS[VALID_REV_CHARS.find(self.name[-2:-1])+1]
             return Rev(new_name)
 
@@ -109,10 +110,16 @@ def is_valid_part(pn_text):
 
 
 class Part(object):
-    def __init__(self, number, revs={}):
+    def __init__(self, number, revs=None):
         self.number = str(number)
-        self.revs = dict(revs)
+
+        if not revs:
+            self.revs = {}
+        else:
+            self.revs = dict(revs)
+
         self.max_rev = None
+
         if not is_valid_part(number):
             raise ValueError(str(number).strip() + " is not a valid part number!")
 
@@ -133,8 +140,11 @@ class Part(object):
 
 
 class ListOfParts(object):
-    def __init__(self, parts={}):
-        self.parts = parts
+    def __init__(self, parts=None):
+        if not parts:
+            self.parts = {}
+        else:
+            self.parts = parts
 
     def add_part(self, pn, rev):
         if not pn in self.parts.keys():
@@ -155,5 +165,5 @@ class ListOfParts(object):
         if not pn in self.parts.keys():
             return "-"
 
-        return self.parts[pn].max_rev.next_rev()
+        return self.parts[pn].max_rev.next_rev
 
