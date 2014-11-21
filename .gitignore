@@ -1,3 +1,7 @@
+# don't want to publish Excel workbooks
+*.xlsx
+*.xlsm
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
