@@ -93,23 +93,23 @@ class Rev(object):
 # a compiled regular expression for the RAST part number format
 PN_RE = re.compile(r'^\d\d\d\-\d\d\d\d\d\d-\d\d$')
 
+def is_valid_part(pn_text):
+    if not isinstance(pn_text, str):
+        return False
+
+    if not PN_RE.match(pn_text):
+        return False
+
+    return True
+
 
 class Part(object):
     def __init__(self, number, revs={}):
         self.number = str(number)
         self.revs = dict(revs)
         self.max_rev = None
-        if not self.is_valid_part(number):
+        if not is_valid_part(number):
             raise ValueError(str(number).strip() + " is not a valid part number!")
-
-    def is_valid_part(self, pn_text):
-        if not isinstance(pn_text, str):
-            return False
-
-        if not PN_RE.match(pn_text):
-            return False
-
-        return True
 
     def has_rev(self, rev_text):
         return self.revs.has_key(rev_text)
@@ -131,10 +131,23 @@ class ListOfParts(object):
         self.parts = parts
 
     def add_part(self, pn, rev):
+        if not pn in self.parts.keys():
+            self.parts[pn] = Part(pn)
 
-        if pn in self.parts.keys():
-            self.parts[pn].revs.append(Rev(rev))
+        return self.parts[pn].add_rev(rev)
 
-    def part_max_rev(self, part):
-        pass
+    def has_part(self, pn, rev):
+        if not pn in self.parts.keys():
+            return False
+
+        return self.parts[pn].has_rev(rev)
+
+    def next_rev(self, pn):
+        if not is_valid_part(pn):
+            return ""
+
+        if not pn in self.parts.keys():
+            return "-"
+
+        return self.parts[pn].max_rev.next_rev()
 

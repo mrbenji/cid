@@ -107,7 +107,7 @@ def extract_part_nums_pnr():
         if not part_number_dict.has_key(current_pn):
             part_number_dict[current_pn] = {}
 
-        part_number_dict[current_pn][current_rev]=current_eco
+        part_number_dict[current_pn][current_rev] = current_eco
 
 
 def extract_part_nums_PS1(filename, all_parts=False, new_pn_only=False):
@@ -355,7 +355,8 @@ def main():
             f.write(u"NOTE: This file lists only the new, unique parts on this ECO. Duplicate and previously-released\n"
                     u"parts are not included.  Nesting is preserved (ex. 065s are indented under the first 139 they\n"
                     u"are affiliated with).  Be aware that you may not be seeing all members of a 139/142/etc., since\n"
-                    u"previously-released parts, or parts already displayed under earlier 139s/etc., will be missing.\n\n")
+                    u"previously-released parts, or parts already displayed under earlier 139s/etc., "
+                    u"will be missing.\n\n")
             for dump in cid_dumps:
                 if cid_dumps[dump]:
                     f.write(bdt_utils.pretty_table(cid_dumps[dump], 3))

@@ -62,12 +62,12 @@ class CidClassesTest(unittest.TestCase):
     def test_add_rev(self):
         my_part = Part("123-456789-01")
 
-        # we haven't added any parts... these should all return False
-        self.assertFalse(my_part.revs.has_key("A"))
+        # we haven't added any revs... these should all return False
+        self.assertFalse(my_part.has_rev("A"))
         self.assertFalse(my_part.revs.has_key("B1"))
-        self.assertFalse(my_part.revs.has_key("C"))
+        self.assertFalse(my_part.has_rev("C"))
 
-        # add_rev should return True if add is successful
+        # add_rev should return True if add was successful
         self.assertTrue(my_part.add_rev("A"))
         self.assertTrue(my_part.add_rev("B1"))
         self.assertTrue(my_part.add_rev("C"))
@@ -78,9 +78,9 @@ class CidClassesTest(unittest.TestCase):
         self.assertFalse(my_part.add_rev("C"))
 
         # if the rev was added, has_key(rev) should return True
-        self.assertTrue(my_part.revs.has_key("A"))
+        self.assertTrue(my_part.has_rev("A"))
         self.assertTrue(my_part.revs.has_key("B1"))
-        self.assertTrue(my_part.revs.has_key("C"))
+        self.assertTrue(my_part.has_rev("C"))
 
         # add_rev should raise a ValueError if we attempt to add an invalid rev.
         with self.assertRaises(ValueError):
@@ -88,6 +88,35 @@ class CidClassesTest(unittest.TestCase):
 
         with self.assertRaises(ValueError):
             my_part.add_rev("AO")
+
+        # test max_rev
+        self.assertEqual(my_part.max_rev.name, "C")
+        self.assertEqual(my_part.max_rev, Rev("C"))
+        self.assertFalse(my_part.has_rev("D"))
+
+    def test_add_part(self):
+        my_list = ListOfParts()
+
+        # we haven't added any parts... this should return False
+        self.assertFalse(my_list.has_part("123-456789-01", "A"))
+
+        # add_part should return True if add was successful
+        self.assertTrue(my_list.add_part("123-456789-01", "A"))
+
+        # add_part should return False if part/rev combo was previously added
+        self.assertFalse(my_list.add_part("123-456789-01", "A"))
+
+        # if the part/rev combo was truly added, has_part(pn, rev) should return True
+        self.assertTrue(my_list.has_part("123-456789-01", "A"))
+
+    def test_next_rev(self):
+        my_list = ListOfParts()
+
+        my_list.add_part("987-654321-01", "A")
+        my_list.add_part("123-123123-11", "Y")
+
+        self.assertEqual(my_list.next_rev("987-654321-01").name, "B")
+        self.assertEqual(my_list.next_rev("123-123123-11").name, "AA")
 
 
 if __name__ == "__main__":
