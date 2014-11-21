@@ -1,10 +1,9 @@
 from functools import total_ordering
 import string
+import re
 
 # the chars in VALID_REV_CHARS are all the valid options for positions in the rev
 VALID_REV_CHARS = "-123456789ABCDEFGHJKLMNPRTUVWY"
-
-
 
 @total_ordering
 class Rev(object):
@@ -22,7 +21,7 @@ class Rev(object):
         if self == other:
             return False
 
-        # catches an oddity of revisions, i.e. that the rev after Y is AA, so Y < AA
+        # catches an oddity of revisions, i.e. that the rev after Y is AA, so Y < AA, and AY < BA
         if self.name.isalpha() and other.name.isalpha() and len(self.name) != len(other.name):
             return len(self.name) > len(other.name)
 
@@ -91,11 +90,40 @@ class Rev(object):
             return Rev(new_name)
 
 
+# a compiled regular expression for the RAST part number format
+PN_RE = re.compile(r'^\d\d\d\-\d\d\d\d\d\d-\d\d$')
+
+
 class Part(object):
-    def __init__(self, number, revs=[]):
+    def __init__(self, number, revs={}):
         self.number = str(number)
-        self.revs = list(revs)
+        self.revs = dict(revs)
         self.max_rev = None
+        if not self.is_valid_part(number):
+            raise ValueError(str(number).strip() + " is not a valid part number!")
+
+    def is_valid_part(self, pn_text):
+        if not isinstance(pn_text, str):
+            return False
+
+        if not PN_RE.match(pn_text):
+            return False
+
+        return True
+
+    def has_rev(self, rev_text):
+        return self.revs.has_key(rev_text)
+
+    def add_rev(self, rev_text):
+        if self.has_rev(rev_text):
+            return False
+
+        self.revs[rev_text] = Rev(rev_text)
+
+        if not self.max_rev or (self.revs[rev_text] > self.max_rev):
+            self.max_rev = Rev(rev_text)
+
+        return True
 
 
 class ListOfParts(object):

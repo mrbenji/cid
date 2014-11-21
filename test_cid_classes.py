@@ -47,5 +47,23 @@ class CidClassesTest(unittest.TestCase):
         self.assertEqual(Rev("B1").next_rev(), Rev("C"))
         self.assertEqual(Rev("CA7").next_rev(), Rev("CB"))
 
+    def test_valid_part_numbers(self):
+        self.assertEqual(Part("123-456789-01").number, "123-456789-01")
+        self.assertEqual(Part("145-123456-00").number, "145-123456-00")
+
+    def test_invalid_part_numbers(self):
+        with self.assertRaises(ValueError):
+            Part("123")
+        with self.assertRaises(ValueError):
+            Part("123456789")
+        with self.assertRaises(ValueError):
+            Part("987-654-3210")
+
+    def test_add_rev(self):
+        my_part = Part("123-456789-01")
+        self.assertFalse(my_part.revs.has_key("A"))
+        my_part.add_rev("A")
+        self.assertTrue(my_part.revs.has_key("A"))
+
 if __name__ == "__main__":
     unittest.main()
