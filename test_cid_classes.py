@@ -61,9 +61,34 @@ class CidClassesTest(unittest.TestCase):
 
     def test_add_rev(self):
         my_part = Part("123-456789-01")
+
+        # we haven't added any parts... these should all return False
         self.assertFalse(my_part.revs.has_key("A"))
-        my_part.add_rev("A")
+        self.assertFalse(my_part.revs.has_key("B1"))
+        self.assertFalse(my_part.revs.has_key("C"))
+
+        # add_rev should return True if add is successful
+        self.assertTrue(my_part.add_rev("A"))
+        self.assertTrue(my_part.add_rev("B1"))
+        self.assertTrue(my_part.add_rev("C"))
+
+        # add_rev should return False if rev was previously added
+        self.assertFalse(my_part.add_rev("A"))
+        self.assertFalse(my_part.add_rev("B1"))
+        self.assertFalse(my_part.add_rev("C"))
+
+        # if the rev was added, has_key(rev) should return True
         self.assertTrue(my_part.revs.has_key("A"))
+        self.assertTrue(my_part.revs.has_key("B1"))
+        self.assertTrue(my_part.revs.has_key("C"))
+
+        # add_rev should raise a ValueError if we attempt to add an invalid rev.
+        with self.assertRaises(ValueError):
+            my_part.add_rev("11")
+
+        with self.assertRaises(ValueError):
+            my_part.add_rev("AO")
+
 
 if __name__ == "__main__":
     unittest.main()
