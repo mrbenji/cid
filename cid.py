@@ -1,4 +1,4 @@
-VERSION_STRING = "CID v0.12 - 11/19/2014"
+VERSION_STRING = "CID v0.13 - 11/21/2014"
 #PNRL_PATH = r"\\us.ray.com\SAS\AST\eng\Operations\CM\Internal\Staff\CM_Submittals\PN_Reserve.xlsm"
 PNRL_PATH = "PN_Reserve_copy.xlsm"
 
@@ -160,8 +160,19 @@ def extract_part_nums_PS1(filename, all_parts=False, new_pn_only=False):
             for cell in row:
 
                 # we only care about certain columns
-                if not pn_sheet['A'+str(cell.row)].value or cell.column not in "ABCEFG":
+                if cell.column not in "ABCEFG":
                     continue
+
+                # basic line validation: if col A is blank, there should be no values in B or G
+                if not pn_sheet['A'+str(cell.row)].value:
+                    if pn_sheet['B'+str(cell.row)].value:
+                        print "ERROR: P/N present in cell B{x}, but A{x} is empty.".format(x=cell.row)
+                        exit(1)
+                    elif pn_sheet['G'+str(cell.row)].value:
+                        print "ERROR: P/N present in cell G{x}, but A{x} is empty.".format(x=cell.row)
+                        exit(1)
+                    else:
+                        continue
 
                 # "Affected Documentation" column
                 if cell.column == "A":
@@ -172,7 +183,7 @@ def extract_part_nums_PS1(filename, all_parts=False, new_pn_only=False):
                 # "Cur Rev" column: we skip this if there's a value in "new rev"
                 if cell.column == "B":
                     if not cell.value:
-                        print "ERROR on PS1 tab: P/N present in cell A{x}, but B{x} is empty.".format(x=cell.row)
+                        print "ERROR: P/N present in cell A{x}, but B{x} is empty.".format(x=cell.row)
                         exit(1)
                     if not pn_sheet['C'+str(cell.row)].value:
                         pn_table[-1][-1] = pn_table[-1][-1] + " " + "Rev. " + cell.value
@@ -201,7 +212,7 @@ def extract_part_nums_PS1(filename, all_parts=False, new_pn_only=False):
                 # "Description..." column
                 if cell.column == "F":
                     if not cell.value:
-                        print "ERROR on PS1 tab: P/N present in cell A{x}, but F{x} is empty.".format(x=cell.row)
+                        print "ERROR: P/N present in cell A{x}, but F{x} is empty.".format(x=cell.row)
                         exit(1)
                     new_indent_level = cell.style.alignment.indent
 

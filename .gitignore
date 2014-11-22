@@ -1,4 +1,8 @@
-# don't want to publish Excel workbooks
+# cid output files
+CONTENTS_ID.*
+NEW_PARTS
+
+# Excel workbooks
 *.xlsx
 *.xlsm
 
