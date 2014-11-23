@@ -9,7 +9,7 @@ VALID_REV_CHARS = "-123456789ABCDEFGHJKLMNPRTUVWY"
 def is_valid_rev(rev_text):
 
     # valid revs must be non-zero-length strings
-    if not len(rev_text) or not isinstance(rev_text, str):
+    if not len(rev_text) or not (isinstance(rev_text, str) or isinstance(rev_text, unicode)):
         return False
 
     # we start by assuming there are no digits in this rev
@@ -100,7 +100,7 @@ PN_RE = re.compile(r'^\d\d\d\-\d\d\d\d\d\d-\d\d$')
 
 
 def is_valid_part(pn_text):
-    if not isinstance(pn_text, str):
+    if not (isinstance(pn_text, str) or isinstance(pn_text, unicode)):
         return False
 
     if not PN_RE.match(pn_text):

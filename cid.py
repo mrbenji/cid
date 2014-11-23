@@ -5,9 +5,9 @@ PNRL_PATH = "PN_Reserve_copy.xlsm"
 import argparse
 import sys
 import io
-import openpyxl     # third party open source library, https://openpyxl.readthedocs.org/en/latest/
-import cid_classes  # custom object defs & helper functions for this script
-import bdt_utils    # Benji's bag-o'-utility-functions
+import openpyxl           # third party open source library, https://openpyxl.readthedocs.org/en/latest/
+from cid_classes import * # custom object defs & helper functions for this script
+import bdt_utils          # Benji's bag-o'-utility-functions
 
 # HAS_NO_MEDIA is a list of "media" tags used for P/Ns that are not put on any official media.  By default
 # they are skipped during CONTENTS_ID output. Media tags are converted to lowercase, with spaces converted
@@ -163,7 +163,8 @@ def extract_part_nums_PS1(filename, all_parts=False, new_pn_only=False):
                 if cell.column not in "ABCEFG":
                     continue
 
-                # basic line validation: if col A is blank, there should be no values in B or G
+                # Basic line validation: if col A is blank, there should be no values in B or G.
+                # Allowing lines like this screws everything up.
                 if not pn_sheet['A'+str(cell.row)].value:
                     if pn_sheet['B'+str(cell.row)].value:
                         print "ERROR: P/N present in cell B{x}, but A{x} is empty.".format(x=cell.row)
@@ -179,11 +180,17 @@ def extract_part_nums_PS1(filename, all_parts=False, new_pn_only=False):
                     pn_table.append([])
                     pn_table[-1].append(cell.value)
                     current_pn = cell.value
+                    if not is_valid_part(current_pn):
+                        print "ERROR: Cell A{x} contains an improperly-formatted part number.".format(x=cell.row)
+                        exit(1)
 
                 # "Cur Rev" column: we skip this if there's a value in "new rev"
                 if cell.column == "B":
                     if not cell.value:
                         print "ERROR: P/N present in cell A{x}, but B{x} is empty.".format(x=cell.row)
+                        exit(1)
+                    if not is_valid_rev(cell.value):
+                        print "ERROR: Cell B{x} contains an invalid revision.".format(x=cell.row)
                         exit(1)
                     if not pn_sheet['C'+str(cell.row)].value:
                         pn_table[-1][-1] = pn_table[-1][-1] + " " + "Rev. " + cell.value
@@ -191,6 +198,12 @@ def extract_part_nums_PS1(filename, all_parts=False, new_pn_only=False):
 
                 # "New Rev" column
                 if cell.column == "C" and cell.value:
+                    if not Rev(pn_sheet['B'+str(cell.row)].value).next_rev.name == cell.value:
+                        print "WARNING: Row {x} skips a revision between 'Cur Rev' and 'New Rev.'\n" \
+                              "         Is this intentional?".format(x=cell.row)
+                    if not is_valid_rev(cell.value):
+                        print "ERROR: Cell C{x} contains an invalid revision.".format(x=cell.row)
+                        exit(1)
                     pn_table[-1][-1] = pn_table[-1][-1] + " " + "Rev. " + cell.value
                     current_pn += " Rev. {}".format(cell.value)
 
@@ -202,7 +215,7 @@ def extract_part_nums_PS1(filename, all_parts=False, new_pn_only=False):
                               'not marked "dup"'.format(cell.row, current_pn, used_part_numbers[current_pn])
                     elif current_pn not in used_part_numbers.keys() and cell.value == "dup" \
                             and pn_sheet['C'+str(cell.row)].value:
-                        print 'WARNING: Row {} has new P/N {},\n         incorrectly marked ' \
+                        print 'WARNING: Row {} has new P/N {}, incorrectly\n         marked ' \
                               'as "dup"'.format(cell.row, current_pn)
                     elif not pn_sheet['C'+str(cell.row)].value and not cell.value:
                         print 'WARNING: Cell C{x} has no value, so a value must be added to ' \
