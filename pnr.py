@@ -33,6 +33,7 @@ def extract_part_nums_pnr():
 
     row_num = 0
     pnr_list = ListOfParts()
+    pnr_warnings = []
 
     if not pn_sheet['A1'].value:
         print "\nERROR: PNR Log, cell A1 - first cell of part number reserve form is blank."
@@ -51,8 +52,8 @@ def extract_part_nums_pnr():
 
             except ValueError:
                 if not is_valid_part(part_num):
-                    print "WARNING: Skipping PNR Log row {} -- illegal part number.".format(row_num)
+                    pnr_warnings.append(u"WARNING: Skipping PNR Log row {} -- illegal part number.".format(row_num))
                 if not is_valid_rev(part_rev):
-                    print "WARNING: Skipping PNR Log row {} -- illegal revision.".format(row_num)
+                    pnr_warnings.append(u"WARNING: Skipping PNR Log row {} -- illegal revision.".format(row_num))
 
-    return pnr_list
+    return pnr_list, pnr_warnings
