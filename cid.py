@@ -1,4 +1,4 @@
-VERSION_STRING = "CID v0.20 - 11/24/2014"
+VERSION_STRING = "CID v0.21 - 11/24/2014"
 
 import argparse
 import sys
@@ -199,11 +199,16 @@ def extract_part_nums_PS1(filename, all_parts=False, new_pn_only=False, pnr_list
                                 exit(1)
 
                         else:
-                            # For released parts, warning if if new rev doesn't follow previous rev in PNRL
+                            # For new parts, warning if pn/rev isn't in the PN Reserve Log yet
+                            pnr_warnings.append(u"WARNING: ECO row {} - part {} needs to be "
+                                                u"added to PN Reserve Log.".format(cell.row,
+                                                                           current_pn_plus_rev))
+
+                            # For new parts, warning if if new rev doesn't follow previous rev in PNRL
                             if pnr_list.has_part(current_pn, prev_rev):
                                 expected_next_rev = pnr_list.parts[current_pn].revs[prev_rev].next_rev.name
                                 if expected_next_rev != current_rev:
-                                    error_msg = u"WARNING: ECO row {} - previous rev for part {} in PNR Log" \
+                                    error_msg = u"WARNING: ECO row {} - previous rev for part {} in PN Reserve Log" \
                                                 "\n         is {}, expected new rev to be " \
                                                 "{} instead of {}.".format(cell.row,
                                                                            current_pn,
