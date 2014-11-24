@@ -8,8 +8,12 @@ VALID_REV_CHARS = "-123456789ABCDEFGHJKLMNPRTUVWY"
 
 def is_valid_rev(rev_text):
 
+    # Revisions 1-9 are legal, but converted to string. Larger integers will get rejected by statement after this one
+    if isinstance(rev_text, int) and rev_text < 10:
+        rev_text = str(rev_text)
+
     # valid revs must be non-zero-length strings
-    if not len(rev_text) or not (isinstance(rev_text, str) or isinstance(rev_text, unicode)):
+    if not (isinstance(rev_text, str) or isinstance(rev_text, unicode)) or not len(rev_text):
         return False
 
     # we start by assuming there are no digits in this rev
@@ -40,8 +44,10 @@ def is_valid_rev(rev_text):
 
 @total_ordering
 class Rev(object):
-    def __init__(self, name):
+    def __init__(self, name, eco=None):
         self.name = str(name)
+        self.eco = str(eco)
+
         if not is_valid_rev(name):
             raise ValueError(str(name).strip() + " is not a valid rev!")
 
@@ -127,11 +133,11 @@ class Part(object):
         # returns True or False, based on whether or not rev_text is one of self.rev's keys
         return rev_text in self.revs
 
-    def add_rev(self, rev_text):
+    def add_rev(self, rev_text, eco=None):
         if self.has_rev(rev_text):
             return False
 
-        self.revs[rev_text] = Rev(rev_text)
+        self.revs[rev_text] = Rev(rev_text, eco)
 
         if not self.max_rev or (self.revs[rev_text] > self.max_rev):
             self.max_rev = Rev(rev_text)
@@ -146,11 +152,11 @@ class ListOfParts(object):
         else:
             self.parts = parts
 
-    def add_part(self, pn, rev):
+    def add_part(self, pn, rev, eco=None):
         if not pn in self.parts.keys():
             self.parts[pn] = Part(pn)
 
-        return self.parts[pn].add_rev(rev)
+        return self.parts[pn].add_rev(rev, eco)
 
     def has_part(self, pn, rev):
         if not pn in self.parts.keys():

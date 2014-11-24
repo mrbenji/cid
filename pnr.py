@@ -32,7 +32,7 @@ def extract_part_nums_pnr():
         exit(1)
 
     row_num = 0
-    part_number_dict = {}
+    pnr_list = ListOfParts()
 
     if not pn_sheet['A1'].value:
         print "\nERROR: PNR Log, cell A1 - first cell of part number reserve form is blank."
@@ -40,19 +40,19 @@ def extract_part_nums_pnr():
 
     for row in pn_rows:
         row_num += 1
-        if pn_sheet['A'+str(row_num)].value and pn_sheet['C'+str(row_num)].value and pn_sheet['D'+str(row_num)].value:
-            current_pn = pn_sheet['A'+str(row_num)].value
-            if not is_valid_part(current_pn):
-                print "\nERROR (PNR LOG): Cell A{} contains an invalid part number.".format(row_num)
-                exit(1)
-            current_rev = pn_sheet['C'+str(row_num)].value
-            if not is_valid_rev(current_rev):
-                print "\nERROR (PNR LOG): Cell C{} contains an invalid revision.".format(row_num)
-                exit(1)
-            current_eco = pn_sheet['D'+str(row_num)].value
-            if not current_pn in part_number_dict:
-                part_number_dict[current_pn] = {}
+        part_num = pn_sheet['A'+str(row_num)].value
+        part_rev = pn_sheet['C'+str(row_num)].value
+        eco_num = pn_sheet['D'+str(row_num)].value
 
-            part_number_dict[current_pn][current_rev] = current_eco
+        if part_num and part_rev and eco_num:
 
-    return part_number_dict
+            try:
+                pnr_list.add_part(part_num, part_rev, eco_num)
+
+            except ValueError:
+                if not is_valid_part(part_num):
+                    print "WARNING: PNR Log row {} has an illegal part number.".format(row_num)
+                if not is_valid_rev(part_rev):
+                    print "WARNING: PNR Log row {} has an illegal revision.".format(row_num)
+
+    return pnr_list

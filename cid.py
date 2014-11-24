@@ -65,7 +65,7 @@ def split_sheet_rows_ps1(pn_sheet, pn_rows, media_to_skip, new_pn_only=False):
     return media_sets
 
 
-def extract_part_nums_PS1(filename, all_parts=False, new_pn_only=False):
+def extract_part_nums_PS1(filename, all_parts=False, new_pn_only=False, pnr_list=None):
     """
     Open ECO spreadsheet, extract part numbers from the PS1 tab
 
@@ -78,6 +78,9 @@ def extract_part_nums_PS1(filename, all_parts=False, new_pn_only=False):
         media_to_skip = []
     else:
         media_to_skip = HAS_NO_MEDIA
+
+    # pnr_verify will be True if a ListOfParts with the contents of the PN Reserve Log is passed in
+    pnr_verify = isinstance(pnr_list, ListOfParts)
 
     try:
         # openpyxl is a library for reading/writing Excel files.
@@ -332,7 +335,7 @@ def make_parser():
     special_meg.add_argument('-n', '--new-pn-only', action='store_true', default=False,
                              help="print only new part numbers, to file NEW_PARTS")
     special_meg.add_argument('-p', '--pnr-verify', action='store_true', default=False,
-                             help="verify ECO PNs vs. Part Number Reserve Log (future)")
+                             help="verify ECO PNs vs. Part Number Reserve Log")
     special_meg.add_argument('-u', '--update-pnr', action='store_true', default=False,
                              help="update Part Number Reserve Log with ECO PNs (future)")
 
@@ -351,13 +354,17 @@ def main():
     # Convert parsed arguments from Namespace to dictionary
     arguments = vars(arguments)
 
-    # -n automatically prints all parts
-    all_parts = arguments["all_parts"] or arguments["new_pn_only"]
+    new_pn_only = arguments["new_pn_only"]
 
-    #pnr_dict = pnr.extract_part_nums_pnr()
+    # -n automatically prints all parts
+    all_parts = arguments["all_parts"] or new_pn_only
+
+    pnr_list = None
+    if arguments["pnr_verify"]:
+        pnr_list = pnr.extract_part_nums_pnr()
 
     # Extract ECO spreadsheet PNs in CONTENTS_ID format (returns a dict of multi-line strings, keyed to media type)
-    cid_dumps = extract_part_nums_PS1(arguments["eco_file"], all_parts, arguments["new_pn_only"])
+    cid_dumps = extract_part_nums_PS1(arguments["eco_file"], all_parts, new_pn_only, pnr_list)
 
     # TURNED THIS ARG OFF FOR NOW, DO WE REALLY NEED IT?
     #if arguments["screen_print"]:
@@ -383,7 +390,7 @@ def main():
                 if cid_dumps[dump]:
                     f.write(bdt_utils.pretty_table(cid_dumps[dump], 3))
                     f.write(u"\n\n")
-    elif arguments["pnr_verify"]:
+    elif arguments["update_pnr"]:
         print "\nThis feature is not yet implemented."
     else:
         # Combine all CONTENTS_IDs into one document.  Can be combined with -m and/or -s.
