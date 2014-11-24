@@ -107,6 +107,7 @@ def extract_part_nums_PS1(filename, all_parts=False, new_pn_only=False, pnr_list
     current_media = ""
     current_pn = ""
     current_rev = ""
+    prev_rev = ""
     part_numbers_already_used = {}
     old_part_numbers = {}
     missing_from_pnr_warnings_issued = []
@@ -137,6 +138,7 @@ def extract_part_nums_PS1(filename, all_parts=False, new_pn_only=False, pnr_list
                     else:
                         continue
 
+
                 # "Affected Documentation" column
                 if cell.column == "A":
                     pn_table.append([])
@@ -146,7 +148,8 @@ def extract_part_nums_PS1(filename, all_parts=False, new_pn_only=False, pnr_list
                         print "ERROR: Cell A{x} contains an improperly-formatted part number.".format(x=cell.row)
                         exit(1)
 
-                # "Cur Rev" column: we skip this if there's a value in "new rev"
+
+                # "Cur Rev" column
                 if cell.column == "B":
                     if not cell.value:
                         print "ERROR: P/N present in cell A{x}, but B{x} is empty.".format(x=cell.row)
@@ -154,22 +157,65 @@ def extract_part_nums_PS1(filename, all_parts=False, new_pn_only=False, pnr_list
                     if not is_valid_rev(cell.value):
                         print "ERROR: Cell B{x} contains an invalid revision.".format(x=cell.row)
                         exit(1)
+
+                    # if there's not a new revision, this is the revision we're using
                     if not pn_sheet['C' + str(cell.row)].value:
-                        pn_table[-1][-1] = pn_table[-1][-1] + " " + "Rev. " + cell.value
                         current_rev = cell.value
-                        current_pn_plus_rev = current_pn + " Rev. {}".format(cell.value)
+                        current_pn_plus_rev = current_pn + " Rev. {}".format(current_rev)
+
+                        # Replace p/n in last table "cell" with pn+revision
+                        pn_table[-1][-1] = current_pn_plus_rev
+
+                        # if there's no new rev, there's no need for the prev_rev var, which is only
+                        # used for comparing previous rev to new rev
+                        prev_rev = ""
+
+                    else:
+                        prev_rev = cell.value
+
 
                 # "New Rev" column
                 if cell.column == "C" and cell.value:
                     if not Rev(pn_sheet['B' + str(cell.row)].value).next_rev.name == cell.value:
-                        print "WARNING: Row {x} skips a revision between 'Cur Rev' and 'New Rev.'\n" \
+                        print "WARNING: ECO row {x} skips a revision between 'Cur Rev' and 'New Rev.'\n" \
                               "         Is this intentional?".format(x=cell.row)
                     if not is_valid_rev(cell.value):
-                        print "ERROR: Cell C{x} contains an invalid revision.".format(x=cell.row)
+                        print "ERROR: ECO cell C{x} contains an invalid revision.".format(x=cell.row)
                         exit(1)
-                    pn_table[-1][-1] = pn_table[-1][-1] + " " + "Rev. " + cell.value
+
                     current_rev = cell.value
-                    current_pn_plus_rev = current_pn + " Rev. {}".format(cell.value)
+                    current_pn_plus_rev = current_pn + " Rev. {}".format(current_rev)
+
+                    if pnr_verify:
+                        # For new parts, error if pn in PNRL and ECO# listed is not the current ECO.
+                        if pnr_list.has_part(current_pn, current_rev):
+                            if pnr_list.parts[current_pn].revs[current_rev].eco != str(pn_sheet['H2'].value):
+                                print "ERROR: ECO row {} -- new pn {} is marked in the\n       PN Reserve Log as " \
+                                      "released on ECO {}, not " \
+                                      "current ECO {}.".format(cell.row,
+                                                               current_pn_plus_rev,
+                                                               pnr_list.parts[current_pn].revs[current_rev].eco,
+                                                               str(pn_sheet['H2'].value))
+                                exit(1)
+
+                        else:
+                            # For released parts, warning if if new rev doesn't follow previous rev in PNRL
+                            if pnr_list.has_part(current_pn, prev_rev):
+                                expected_next_rev = pnr_list.parts[current_pn].revs[prev_rev].next_rev.name
+                                if expected_next_rev != current_rev:
+                                    error_msg = u"WARNING: ECO row {} - previous rev for part {} in PNR Log" \
+                                                "\n         is {}, expected new rev to be " \
+                                                "{} instead of {}.".format(cell.row,
+                                                                           current_pn,
+                                                                           prev_rev,
+                                                                           expected_next_rev,
+                                                                           current_rev)
+                                    pnr_warnings.append(error_msg)
+                                    print error_msg
+
+                    # Replace p/n in last table "cell" with pn+revision
+                    pn_table[-1][-1] = current_pn_plus_rev
+
 
                 # "ECO" column -- not useful for CONTENTS_ID, but used for form validation.
                 if cell.column == "E":
@@ -178,27 +224,27 @@ def extract_part_nums_PS1(filename, all_parts=False, new_pn_only=False, pnr_list
                     # "dup" in the "ECO" column.  Is this a dup not marked "dup?"
                     if current_pn_plus_rev in part_numbers_already_used.keys() and not cell.value == "dup" \
                             and pn_sheet['C' + str(cell.row)].value:
-                        print 'WARNING: Row {} has duplicate P/N {},\n         last used on row {} but ' \
+                        print 'WARNING: ECO row {} has duplicate P/N {},\n         last used on row {} but ' \
                               'not marked "dup"'.format(cell.row, current_pn_plus_rev,
                                                         part_numbers_already_used[current_pn])
 
                     # Next: is this a p/n marked "dup" that isn't actually a dup?
                     elif current_pn_plus_rev not in part_numbers_already_used.keys() and cell.value == "dup" \
                             and pn_sheet['C' + str(cell.row)].value:
-                        print 'WARNING: Row {} has new P/N {}, incorrectly\n         marked ' \
+                        print 'WARNING: ECO row {} has new P/N {}, incorrectly\n         marked ' \
                               'as "dup"'.format(cell.row, current_pn_plus_rev)
 
                     # If there's no new rev, there must be an ECO listed in the ECO column
                     elif not pn_sheet['C' + str(cell.row)].value:
                         if not cell.value:
-                            print 'ERROR: Cell C{x} has no value, so a value must be added to ' \
+                            print 'ERROR: ECO cell C{x} has no value, so a value must be added to ' \
                                   'empty cell E{x}!'.format(x=cell.row)
                             exit(1)
                         elif not cell.value == "dup":
 
                             # if -p/--pnr-verify was set, verify old P/N's vs PN Reserve log
                             if pnr_verify:
-                                # Warn if the ECO# listed for a released pn/rev doesn't match what's in the PNR Log
+                                # Error if the ECO# listed for a released pn/rev doesn't match what's in the PNR Log
                                 if pnr_list.has_part(current_pn, current_rev) \
                                         and pnr_list.parts[current_pn].revs[current_rev].eco != str(cell.value):
                                     print 'ERROR: On ECO row {}, {} is marked as being released on \n       ECO {}. ' \
@@ -214,7 +260,6 @@ def extract_part_nums_PS1(filename, all_parts=False, new_pn_only=False, pnr_list
                                         pnr_warnings.append(u"INFO: ECO row {} - released part {} not "
                                                             "in the PNR Log.".format(cell.row, current_pn_plus_rev))
                                         missing_from_pnr_warnings_issued.append(current_pn_plus_rev)
-
 
                             # The following block of validation tests keeps track of the ECO numbers recorded
                             # for previously released part/rev combos.
@@ -244,6 +289,7 @@ def extract_part_nums_PS1(filename, all_parts=False, new_pn_only=False, pnr_list
                     # Keep track of part numbers already listed on the ECO
                     part_numbers_already_used[current_pn_plus_rev] = "{}".format(cell.row)
 
+
                 # "Description..." column
                 if cell.column == "F":
                     if not cell.value:
@@ -266,6 +312,7 @@ def extract_part_nums_PS1(filename, all_parts=False, new_pn_only=False, pnr_list
                     if indent_reduced:
                         pn_table[-1][-1] = "\n" + pn_table[-1][-1]
                     pn_table[-1].append(cell.value)
+
 
                 # "Media" column
                 if cell.column == "G":
@@ -344,9 +391,6 @@ def make_parser():
                               help="print to many files (default)")
     output_group.add_argument('-o', '--print-to-one', action='store_true', default=False,
                               help="print to one file (CONTENTS_ID.all)")
-    # TURNED THIS ARG OFF FOR NOW, DO WE REALLY NEED IT?
-    # output_group.add_argument('-s', '--screen-print', action='store_true', default=False,
-    # help="print to screen")
     output_group.add_argument('-a', '--all-parts', action='store_true', default=False,
                               help="include PNs that aren't on any media")
     output_group.add_argument('-e', type=str, choices=["unix", "dos"], default="unix",
@@ -397,17 +441,11 @@ def main():
         eol = '\n'
 
     if pnr_warnings:
-        print 'WARNING: Non-fatal issues found in PN Reserve Log validation phase.\n         See file PNR_WARNINGS ' \
+        print 'WARNING: Additional issues found in PN Reserve Log validation phase.\n         See file PNR_WARNINGS ' \
               'for details.'
         with io.open("PNR_WARNINGS", "w", newline=eol) as f:
             for warning in pnr_warnings:
                 f.write(warning + "\n")
-
-    # TURNED THIS ARG OFF FOR NOW, DO WE REALLY NEED IT?
-    # if arguments["screen_print"]:
-    #    for dump in cid_dumps:
-    #        print bdt_utils.pretty_table(cid_dumps[dump], 3)
-    #        print "\n\n"
 
     if arguments["new_pn_only"]:
         print "\nCreating file NEW_PARTS...",
