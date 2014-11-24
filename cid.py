@@ -106,7 +106,7 @@ def extract_part_nums_PS1(filename, all_parts=False, new_pn_only=False, pnr_list
     current_media = ""
     current_pn = ""
     current_rev = ""
-    new_part_numbers_already_used = {}
+    part_numbers_already_used = {}
     old_part_numbers = {}
     skip_media = False
 
@@ -154,8 +154,8 @@ def extract_part_nums_PS1(filename, all_parts=False, new_pn_only=False, pnr_list
                         exit(1)
                     if not pn_sheet['C'+str(cell.row)].value:
                         pn_table[-1][-1] = pn_table[-1][-1] + " " + "Rev. " + cell.value
-                        current_pn += " Rev. {}".format(cell.value)
                         current_rev = cell.value
+                        current_pn_plus_rev = current_pn + " Rev. {}".format(cell.value)
 
                 # "New Rev" column
                 if cell.column == "C" and cell.value:
@@ -166,24 +166,25 @@ def extract_part_nums_PS1(filename, all_parts=False, new_pn_only=False, pnr_list
                         print "ERROR: Cell C{x} contains an invalid revision.".format(x=cell.row)
                         exit(1)
                     pn_table[-1][-1] = pn_table[-1][-1] + " " + "Rev. " + cell.value
-                    current_pn += " Rev. {}".format(cell.value)
                     current_rev = cell.value
+                    current_pn_plus_rev = current_pn + " Rev. {}".format(cell.value)
 
                 # "ECO" column -- not useful for CONTENTS_ID, but used for form validation.
                 if cell.column == "E":
 
                     # once a new p/n has been listed, subsequent occurrences must be marked
                     # "dup" in the "ECO" column.  Is this a dup not marked "dup?"
-                    if current_pn in new_part_numbers_already_used.keys() and not cell.value == "dup" \
+                    if current_pn_plus_rev in part_numbers_already_used.keys() and not cell.value == "dup" \
                             and pn_sheet['C'+str(cell.row)].value:
                         print 'WARNING: Row {} has duplicate P/N {},\n         last used on row {} but ' \
-                              'not marked "dup"'.format(cell.row, current_pn, new_part_numbers_already_used[current_pn])
+                              'not marked "dup"'.format(cell.row, current_pn_plus_rev,
+                                                        part_numbers_already_used[current_pn])
 
                     # Next: is this a p/n marked "dup" that isn't actually a dup?
-                    elif current_pn not in new_part_numbers_already_used.keys() and cell.value == "dup" \
+                    elif current_pn_plus_rev not in part_numbers_already_used.keys() and cell.value == "dup" \
                             and pn_sheet['C'+str(cell.row)].value:
                         print 'WARNING: Row {} has new P/N {}, incorrectly\n         marked ' \
-                              'as "dup"'.format(cell.row, current_pn)
+                              'as "dup"'.format(cell.row, current_pn_plus_rev)
 
                     # If there's no new rev, there must be an ECO listed in the ECO column
                     elif not pn_sheet['C'+str(cell.row)].value:
@@ -193,34 +194,46 @@ def extract_part_nums_PS1(filename, all_parts=False, new_pn_only=False, pnr_list
                             exit(1)
                         elif not cell.value == "dup":
 
+                            # verify old p/n's vs PN Reserve log?
+                            if pnr_verify:
+                                if pnr_list.has_part(current_pn, current_rev) \
+                                        and pnr_list.parts[current_pn].revs[current_rev].eco != str(cell.value):
+                                    print "ERROR: On ECO row {}, {} is marked as being released on \n       ECO {}. " \
+                                          "This conflicts with the PN Reserve Log, where\n       it is marked as " \
+                                          "released on ECO {}.".format(cell.row,
+                                                           current_pn,
+                                                           cell.value,
+                                                           pnr_list.parts[current_pn].revs[current_rev].eco)
+                                    exit(1)
+
+
                             # The following block of validation tests keeps track of the ECO numbers recorded
                             # for previously released part/rev combos.
 
                             # If this is the first instance of this previously-released part, create a placeholder.
                             if not current_pn in old_part_numbers:
-                                old_part_numbers[current_pn] = {}
+                                old_part_numbers[current_pn_plus_rev] = {}
 
                             # If the same rev of this previously-released part has been listed earlier...
-                            if current_rev in old_part_numbers[current_pn]:
+                            if current_rev in old_part_numbers[current_pn_plus_rev]:
 
                                 # When a previously-released part/rev is listed more than once, all instances
                                 # should list the same ECO#
-                                if old_part_numbers[current_pn][current_rev] != cell.value:
+                                if old_part_numbers[current_pn_plus_rev][current_rev] != cell.value:
                                     print "ERROR: On row {}, {} is marked as being released on \n       ECO {}. " \
                                           "This conflicts with row {}, where it is marked as \n       released on " \
                                           "ECO {}.".format(cell.row,
-                                                          current_pn,
+                                                          current_pn_plus_rev,
                                                           cell.value,
-                                                          new_part_numbers_already_used[current_pn],
-                                                          old_part_numbers[current_pn][current_rev])
+                                                          part_numbers_already_used[current_pn_plus_rev],
+                                                          old_part_numbers[current_pn_plus_rev][current_rev])
                                     exit(1)
 
                             # store the ECO# listed for the pn/rev on this row
-                            old_part_numbers[current_pn][current_rev] = cell.value
+                            old_part_numbers[current_pn_plus_rev][current_rev] = cell.value
 
-                    else:
-                        # Keep track of new part numbers already listed on the ECO
-                        new_part_numbers_already_used[current_pn] = "{}".format(cell.row)
+                    # Keep track of part numbers already listed on the ECO
+                    part_numbers_already_used[current_pn_plus_rev] = "{}".format(cell.row)
 
                 # "Description..." column
                 if cell.column == "F":
