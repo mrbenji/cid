@@ -1,6 +1,4 @@
 VERSION_STRING = "CID v0.13 - 11/21/2014"
-#PNRL_PATH = r"\\us.ray.com\SAS\AST\eng\Operations\CM\Internal\Staff\CM_Submittals\PN_Reserve.xlsm"
-PNRL_PATH = "PN_Reserve_copy.xlsm"
 
 import argparse
 import sys
@@ -8,6 +6,7 @@ import io
 import openpyxl           # third party open source library, https://openpyxl.readthedocs.org/en/latest/
 from cid_classes import * # custom object defs & helper functions for this script
 import bdt_utils          # Benji's bag-o'-utility-functions
+import pnr
 
 # HAS_NO_MEDIA is a list of "media" tags used for P/Ns that are not put on any official media.  By default
 # they are skipped during CONTENTS_ID output. Media tags are converted to lowercase, with spaces converted
@@ -64,50 +63,6 @@ def split_sheet_rows_ps1(pn_sheet, pn_rows, media_to_skip, new_pn_only=False):
                     media_sets[current_media].append(row)
 
     return media_sets
-
-
-def extract_part_nums_pnr():
-    """
-    Extract part numbers from the part number reserve log, return them as a dict keyed by P/N
-
-    :return: contents of part number reserve log main worksheet, formatted as a dict.  Values are
-    lists of dicts {rev:ECO}, keys are base p/n.
-    """
-
-    try:
-        # openpyxl is a library for reading/writing Excel files.
-        pnr_log = openpyxl.load_workbook(PNRL_PATH)
-    except openpyxl.exceptions.InvalidFileException:
-        print '\nERROR: Could not open Part Number Reserve Log at path:' \
-              '\n       {}'.format(PNRL_PATH)
-        sys.exit(1)
-
-    # part number reserve workbook must have a sheet called "PN_Rev"
-    pn_sheet = pnr_log.get_sheet_by_name('PN_Rev')
-    try:
-        pn_rows = pn_sheet.rows
-    except AttributeError:
-        print '\nERROR: No PN_Rev tab on Part Number Reserve Log at path:' \
-              '\n\n     {}'.format(PNRL_PATH)
-        sys.exit(1)
-
-    row_num = 0
-    part_number_dict = {}
-
-    if not pn_sheet['A1'].value:
-        print "\nERROR: PNR Log, cell A1 - first cell of part number reserve form is blank."
-        exit(1)
-
-    for row in pn_rows:
-        row_num += 1
-        current_pn = pn_sheet['A'+str(row_num)].value
-        current_rev = pn_sheet['C'+str(row_num)].value
-        current_eco = pn_sheet['D'+str(row_num)].value
-
-        if not current_pn in part_number_dict:
-            part_number_dict[current_pn] = {}
-
-        part_number_dict[current_pn][current_rev] = current_eco
 
 
 def extract_part_nums_PS1(filename, all_parts=False, new_pn_only=False):
@@ -398,6 +353,8 @@ def main():
 
     # -n automatically prints all parts
     all_parts = arguments["all_parts"] or arguments["new_pn_only"]
+
+    #pnr_dict = pnr.extract_part_nums_pnr()
 
     # Extract ECO spreadsheet PNs in CONTENTS_ID format (returns a dict of multi-line strings, keyed to media type)
     cid_dumps = extract_part_nums_PS1(arguments["eco_file"], all_parts, arguments["new_pn_only"])
