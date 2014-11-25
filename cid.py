@@ -1,4 +1,4 @@
-VERSION_STRING = "CID v0.21 - 11/24/2014"
+VERSION_STRING = "CID v0.22 - 11/24/2014"
 
 import argparse
 import sys
@@ -27,6 +27,8 @@ def split_sheet_rows_ps1(pn_sheet, pn_rows, media_to_skip, new_pn_only=False):
 
     row_num = 0
     current_media = ""
+    part_number_count = 0
+    new_part_number_count = 0
     media_sets = {}
 
     # split PN rows into per-media-type lists
@@ -54,19 +56,26 @@ def split_sheet_rows_ps1(pn_sheet, pn_rows, media_to_skip, new_pn_only=False):
                     media_sets[current_media] = []
 
             # if -n/--new-pn-only is set, we need to verify the part is new before adding this row.
-            if new_pn_only and current_media:
-                if pn_sheet['C' + str(row_num)].value and not pn_sheet['E' + str(row_num)].value:
+            if pn_sheet['C' + str(row_num)].value and not pn_sheet['E' + str(row_num)].value and current_media:
+                new_part_number_count += 1
+                if new_pn_only:
                     media_sets[current_media].append(row)
-                continue
+                    part_number_count += 1
+                    # return to the top of the for loop
+                    continue
 
             # if not on skipped media, add the row to the appropriate list in the media_sets dict
             if current_media and not current_media in media_to_skip:
                 media_sets[current_media].append(row)
+                part_number_count += 1
+
+    print "\n{} total part number lines. {} parts " \
+          "were changed.\n".format(part_number_count, new_part_number_count)
 
     return media_sets
 
 
-def extract_part_nums_PS1(filename, all_parts=False, new_pn_only=False, pnr_list=None, pnr_warnings=[]):
+def extract_ps1_tab_part_nums(filename, all_parts=False, new_pn_only=False, pnr_list=None, pnr_warnings=[]):
     """
     Open ECO spreadsheet, extract part numbers from the PS1 tab
 
@@ -202,7 +211,7 @@ def extract_part_nums_PS1(filename, all_parts=False, new_pn_only=False, pnr_list
                             # For new parts, warning if pn/rev isn't in the PN Reserve Log yet
                             pnr_warnings.append(u"WARNING: ECO row {} - part {} needs to be "
                                                 u"added to PN Reserve Log.".format(cell.row,
-                                                                           current_pn_plus_rev))
+                                                                                   current_pn_plus_rev))
 
                             # For new parts, warning if if new rev doesn't follow previous rev in PNRL
                             if pnr_list.has_part(current_pn, prev_rev):
@@ -436,8 +445,8 @@ def main():
         pnr_list, pnr_warnings = pnr.extract_part_nums_pnr()
 
     # Extract ECO spreadsheet PNs in CONTENTS_ID format (returns a dict of multi-line strings, keyed to media type)
-    cid_dumps, pnr_warnings = extract_part_nums_PS1(arguments["eco_file"],
-                                                    all_parts, new_pn_only, pnr_list, pnr_warnings)
+    cid_dumps, pnr_warnings = extract_ps1_tab_part_nums(arguments["eco_file"],
+                                                        all_parts, new_pn_only, pnr_list, pnr_warnings)
 
     # Set file output line endings to requested format.  One (and only one) will always be True.  Default is UNIX.
     if arguments["e"] == "dos":
@@ -446,14 +455,14 @@ def main():
         eol = '\n'
 
     if pnr_warnings:
-        print 'WARNING: Additional issues found in PN Reserve Log validation phase.\n         See file PNR_WARNINGS ' \
-              'for details.'
+        print 'WARNING: Issues found in PN Reserve Log validation phase.\n         See file PNR_WARNINGS ' \
+              'for details.\n'
         with io.open("PNR_WARNINGS", "w", newline=eol) as f:
             for warning in pnr_warnings:
                 f.write(warning + "\n")
 
     if arguments["new_pn_only"]:
-        print "\nCreating file NEW_PARTS...",
+        print "Creating file NEW_PARTS, containing only new, unique parts...",
         with io.open("NEW_PARTS", "w", newline=eol) as f:
             f.write(u"NOTE: This file lists only the new, unique parts on this ECO. Duplicate and previously-released\n"
                     u"parts are not included.  Nesting is preserved (ex. 065s are indented under the first 139 they\n"
@@ -469,7 +478,7 @@ def main():
     else:
         # Combine all CONTENTS_IDs into one document.  Can be combined with -m and/or -s.
         if arguments["print_to_one"]:
-            print "\nCreating file CONTENTS_ID.all...",
+            print "Creating file CONTENTS_ID.all...",
             with io.open("CONTENTS_ID.all", "w", newline=eol) as f:
                 for dump in cid_dumps:
                     f.write(bdt_utils.pretty_table(cid_dumps[dump], 3))

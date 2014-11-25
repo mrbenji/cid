@@ -1,5 +1,5 @@
-import sys
 import openpyxl           # third party open source library, https://openpyxl.readthedocs.org/en/latest/
+
 from cid_classes import *
 
 PNRL_PATH = r"\\us.ray.com\SAS\AST\eng\Operations\CM\Internal\Staff\CM_Submittals\PN_Reserve.xlsm"
