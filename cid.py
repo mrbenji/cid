@@ -27,6 +27,7 @@ def split_sheet_rows_ps1(pn_sheet, pn_rows, media_to_skip, new_pn_only=False):
 
     row_num = 0
     current_media = ""
+    current_media_type = ""
     part_number_count = 0
     new_part_number_count = 0
     media_sets = {}
@@ -41,18 +42,22 @@ def split_sheet_rows_ps1(pn_sheet, pn_rows, media_to_skip, new_pn_only=False):
                 print "\nERROR: Cell G5 - First P/N must have a value in media column."
                 exit(1)
             current_media_col = pn_sheet['G' + str(row_num)].value
-            prev_media = str(current_media_col).strip().replace(" ", "_").lower()
 
-            # is this a new media type?
-            if current_media_col and not prev_media == current_media:
-                current_media = str(current_media_col).strip().replace(" ", "_").lower()
-                if prev_media in media_sets.keys():
-                    print "\nERROR: Cell G{} - Can't re-use {} after switching to a different type.".format(row_num,
-                                                                                                            current_media)
-                    sys.exit(1)
+            # is this a new media set?
+            if current_media_col:
+                current_media_type = str(current_media_col).strip().replace(" ", "_").lower()
+                curr_rev = pn_sheet['B' + str(row_num)].value
+                new_rev = pn_sheet['C' + str(row_num)].value
+
+                if new_rev:
+                    current_media = "{}-{}".format(pn_sheet['A' + str(row_num)].value,
+                                                   pn_sheet['C' + str(row_num)].value)
+                elif curr_rev:
+                    current_media = "{}-{}".format(pn_sheet['A' + str(row_num)].value,
+                                                   pn_sheet['C' + str(row_num)].value)
 
                 # if this is a media type we want a CONTENTS_ID for, crate an empty list for it in the media_sets dict
-                if not current_media in media_to_skip:
+                if not current_media_type in media_to_skip:
                     media_sets[current_media] = []
 
             # if -n/--new-pn-only is set, we need to verify the part is new before adding this row.
@@ -65,7 +70,7 @@ def split_sheet_rows_ps1(pn_sheet, pn_rows, media_to_skip, new_pn_only=False):
                     continue
 
             # if not on skipped media, add the row to the appropriate list in the media_sets dict
-            if current_media and not current_media in media_to_skip:
+            if current_media and not current_media_type in media_to_skip:
                 media_sets[current_media].append(row)
                 part_number_count += 1
 
