@@ -31,6 +31,7 @@ def split_sheet_rows_ps1(pn_sheet, pn_rows, media_to_skip, new_pn_only=False):
     part_number_count = 0
     new_part_number_count = 0
     media_sets = {}
+    media_set_order = []
 
     # split PN rows into per-media-type lists
     for row in pn_rows:
@@ -59,6 +60,7 @@ def split_sheet_rows_ps1(pn_sheet, pn_rows, media_to_skip, new_pn_only=False):
                 # if this is a media type we want a CONTENTS_ID for, crate an empty list for it in the media_sets dict
                 if not current_media_type in media_to_skip:
                     media_sets[current_media] = []
+                    media_set_order.append(current_media)
 
             # if -n/--new-pn-only is set, we need to verify the part is new before adding this row.
             if pn_sheet['C' + str(row_num)].value and not pn_sheet['E' + str(row_num)].value and current_media:
@@ -77,7 +79,7 @@ def split_sheet_rows_ps1(pn_sheet, pn_rows, media_to_skip, new_pn_only=False):
     print "\n{} total part number lines. {} parts " \
           "were changed.\n".format(part_number_count, new_part_number_count)
 
-    return media_sets
+    return media_sets, media_set_order
 
 
 def extract_ps1_tab_part_nums(filename, all_parts=False, new_pn_only=False, pnr_list=None, pnr_warnings=[]):
@@ -115,9 +117,10 @@ def extract_ps1_tab_part_nums(filename, all_parts=False, new_pn_only=False, pnr_
         sys.exit(1)
 
     # convert pn_sheet.rows into a dict of row object lists, keyed by media keyword
-    media_sets = split_sheet_rows_ps1(pn_sheet, pn_rows, media_to_skip, new_pn_only)
+    media_sets, media_set_order = split_sheet_rows_ps1(pn_sheet, pn_rows, media_to_skip, new_pn_only)
 
     cid_tables = {}
+    cid_table_order = []
     current_media = ""
     current_pn = ""
     current_rev = ""
@@ -127,9 +130,10 @@ def extract_ps1_tab_part_nums(filename, all_parts=False, new_pn_only=False, pnr_
     missing_from_pnr_warnings_issued = []
     skip_media = False
 
-    for set_name in media_sets.keys():
+    for set_name in media_set_order:
         current_indent_level = 0
         cid_tables[set_name] = []
+        cid_table_order.append(set_name)
         # pn_table is a reference to cid_tables[set_name], not a copy
         pn_table = cid_tables[set_name]
 
@@ -341,29 +345,29 @@ def extract_ps1_tab_part_nums(filename, all_parts=False, new_pn_only=False, pnr_
                             if current_media.lower() in media_to_skip:
                                 skip_media = True
                             else:
-                                # if on a new, non-skipped media type, we pre-pend a line with the media type
+                                # if on a new, non-skipped media type, we pre-pend a line with the first part number
                                 skip_media = False
                                 hold_row = pn_table.pop()
-                                pn_table.append([current_media, ""])
+                                pn_table.append([current_media + ":" + set_name, ""])
                                 pn_table.append(hold_row)
 
                     # If we're on a row for media we skip, remove entire row from results
                     if skip_media:
                         pn_table.pop()
 
-    return cid_tables, pnr_warnings
+    return cid_tables, cid_table_order, pnr_warnings
 
 
-def write_single_cid_file(contents_id_dump, eol):
+def write_single_cid_file(contents_id_table, eol):
     """
     Write the contents of a table to a file
 
-    :param contents_id_dump: a table of part numbers, formatted into a multi-line string by bdt.pretty_table()
+    :param contents_id_table: a table of part numbers, formatted into a multi-line string by bdt.pretty_table()
     :param eol: the end of line format to use, will be \n for UNIX, \r\n for DOS.
     """
 
-    # break contents_id "dump" into a list of lines
-    for line in contents_id_dump.split("\n"):
+    # break contents_id "table" into a list of lines
+    for line in contents_id_table.split("\n"):
 
         # only do the following block on non-blank lines
         if line:
@@ -373,7 +377,7 @@ def write_single_cid_file(contents_id_dump, eol):
             # does this line not start with a part number?  Then it's a media identifier (CD1, Synergy, etc.)
             # that should be used to name the file, but not be written to the file.
             if not stripped_line[0:3].isdigit():
-                current_media = line.strip()
+                current_media = stripped_line[stripped_line.find(":")+1:]
                 print "Creating file CONTENTS_ID.{}...".format(current_media.replace(" ", "_"))
                 output_file = io.open("CONTENTS_ID." + current_media.replace(" ", "_"), "w", newline=eol)
                 continue
@@ -382,7 +386,7 @@ def write_single_cid_file(contents_id_dump, eol):
             # write line to file, passes along blank lines, too
             output_file.write(line + "\n")
         except NameError:
-            print "\nERROR: write_single_cid_file() was passed a dumpfile without a media ID as the first line."
+            print "\nERROR: write_single_cid_file() was passed a tablefile without a media ID as the first line."
             exit(1)
 
     if not output_file.closed:
@@ -450,7 +454,7 @@ def main():
         pnr_list, pnr_warnings = pnr.extract_part_nums_pnr()
 
     # Extract ECO spreadsheet PNs in CONTENTS_ID format (returns a dict of multi-line strings, keyed to media type)
-    cid_dumps, pnr_warnings = extract_ps1_tab_part_nums(arguments["eco_file"],
+    cid_tables, cid_table_order, pnr_warnings = extract_ps1_tab_part_nums(arguments["eco_file"],
                                                         all_parts, new_pn_only, pnr_list, pnr_warnings)
 
     # Set file output line endings to requested format.  One (and only one) will always be True.  Default is UNIX.
@@ -474,9 +478,9 @@ def main():
                     u"are affiliated with).  Be aware that you may not be seeing all members of a 139/142/etc., since\n"
                     u"previously-released parts, or parts already displayed under earlier 139s/etc., "
                     u"will be missing.\n\n")
-            for dump in cid_dumps:
-                if cid_dumps[dump]:
-                    f.write(bdt_utils.pretty_table(cid_dumps[dump], 3))
+            for table in cid_table_order:
+                if cid_tables[table]:
+                    f.write(bdt_utils.pretty_table(cid_tables[table], 3))
                     f.write(u"\n\n")
     elif arguments["update_pnr"]:
         print "\nThis feature is not yet implemented."
@@ -485,8 +489,8 @@ def main():
         if arguments["print_to_one"]:
             print "Creating file CONTENTS_ID.all...",
             with io.open("CONTENTS_ID.all", "w", newline=eol) as f:
-                for dump in cid_dumps:
-                    f.write(bdt_utils.pretty_table(cid_dumps[dump], 3))
+                for table in cid_table_order:
+                    f.write(bdt_utils.pretty_table(cid_tables[table], 3))
                     f.write(u"\n\n")
 
         # if only -o was set, don't print to many.
@@ -495,9 +499,9 @@ def main():
 
         if arguments["print_to_many"]:
             print "\n"
-            for dump in cid_dumps:
+            for table in cid_table_order:
                 # write_single_cid_file outputs everything after the media type line to a CONTENTS_ID.<media type> file.
-                write_single_cid_file(bdt_utils.pretty_table(cid_dumps[dump], 3), eol)
+                write_single_cid_file(bdt_utils.pretty_table(cid_tables[table], 3), eol)
 
 
 if __name__ == "__main__":
