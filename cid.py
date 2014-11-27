@@ -194,12 +194,13 @@ def extract_ps1_tab_part_nums(filename, all_parts=False, new_pn_only=False, pnr_
 
                 # "New Rev" column
                 if cell.column == "C" and cell.value:
-                    if not Rev(pn_sheet['B' + str(cell.row)].value).next_rev.name == cell.value:
-                        print "WARNING: ECO row {x} skips a revision between 'Cur Rev' and 'New Rev.'\n" \
-                              "         Is this intentional?".format(x=cell.row)
                     if not is_valid_rev(cell.value):
                         print "ERROR: ECO cell C{x} contains an invalid revision.".format(x=cell.row)
                         exit(1)
+
+                    if not Rev(pn_sheet['B' + str(cell.row)].value).next_rev.name == cell.value:
+                        print "WARNING: Rev in C{x} is not the next valid rev after rev in B{x}.\n" \
+                              "         Is this intentional?".format(x=cell.row)
 
                     current_rev = cell.value
                     current_pn_plus_rev = current_pn + " Rev. {}".format(current_rev)
@@ -249,7 +250,7 @@ def extract_ps1_tab_part_nums(filename, all_parts=False, new_pn_only=False, pnr_
                             and pn_sheet['C' + str(cell.row)].value:
                         print 'WARNING: ECO row {} has duplicate P/N {},\n         last used on row {} but ' \
                               'not marked "dup"'.format(cell.row, current_pn_plus_rev,
-                                                        part_numbers_already_used[current_pn])
+                                                        part_numbers_already_used[current_pn_plus_rev])
 
                     # Next: is this a p/n marked "dup" that isn't actually a dup?
                     elif current_pn_plus_rev not in part_numbers_already_used.keys() and cell.value == "dup" \
