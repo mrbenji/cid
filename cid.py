@@ -520,7 +520,7 @@ def main():
     else:
         # Combine all CONTENTS_IDs into one document.  Can be combined with -m and/or -s.
         if arguments["print_to_one"]:
-            print "Creating file CONTENTS_ID.all...",
+            print "Creating file CONTENTS_ID.all...\n",
             with io.open("CONTENTS_ID.all", "w", newline=eol) as f:
                 for table in cid_table_order:
                     f.write(bdt_utils.pretty_table(cid_tables[table], 3))
