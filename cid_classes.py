@@ -4,6 +4,8 @@ import re
 
 # the chars in VALID_REV_CHARS are all the valid options for positions in the rev
 VALID_REV_CHARS = "-123456789ABCDEFGHJKLMNPRTUVWY"
+INVALID_REV_CHARS = "IOQSXZ"
+VALID_AND_INVALID_REV_CHARS = "-123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ"
 
 
 def is_valid_rev(rev_text):

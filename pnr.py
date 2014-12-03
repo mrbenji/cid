@@ -1,9 +1,10 @@
 import openpyxl           # third party open source library, https://openpyxl.readthedocs.org/en/latest/
+import sys
 
 from cid_classes import *
 
-#PNRL_PATH = r"\\us.ray.com\SAS\AST\eng\Operations\CM\Internal\Staff\CM_Submittals\PN_Reserve.xlsm"
-PNRL_PATH = "PN_Reserve_copy.xlsm"
+PNRL_PATH = r"\\us.ray.com\SAS\AST\eng\Operations\CM\Internal\Staff\CM_Submittals\PN_Reserve.xlsm"
+#PNRL_PATH = "PN_Reserve_copy.xlsm"
 
 
 def extract_part_nums_pnr():
@@ -20,7 +21,7 @@ def extract_part_nums_pnr():
     except openpyxl.exceptions.InvalidFileException:
         print '\nERROR: Could not open Part Number Reserve Log at path:' \
               '\n       {}'.format(PNRL_PATH)
-        exit(1)
+        sys.exit(1)
 
     # part number reserve workbook must have a sheet called "PN_Rev"
     pn_sheet = pnr_log.get_sheet_by_name('PN_Rev')
@@ -29,7 +30,7 @@ def extract_part_nums_pnr():
     except AttributeError:
         print '\nERROR: No PN_Rev tab on Part Number Reserve Log at path:' \
               '\n\n     {}'.format(PNRL_PATH)
-        exit(1)
+        sys.exit(1)
 
     row_num = 0
     pnr_list = ListOfParts()
@@ -37,7 +38,7 @@ def extract_part_nums_pnr():
 
     if not pn_sheet['A1'].value:
         print "\nERROR: PNR Log, cell A1 - first cell of part number reserve form is blank."
-        exit(1)
+        sys.exit(1)
 
     for row in pn_rows:
         row_num += 1

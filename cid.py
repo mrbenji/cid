@@ -1,4 +1,4 @@
-VERSION_STRING = "CID v0.22 - 11/24/2014"
+VERSION_STRING = "CID v0.22 - 12/03/2014"
 
 import argparse
 import sys
@@ -16,7 +16,7 @@ HAS_NO_MEDIA = ["scif", "hard_copy", "hardcopy", "synergy"]
 
 def split_sheet_rows_ps1(pn_sheet, pn_rows, media_to_skip, new_pn_only=False):
     """
-    Store rows from PS1 tab of spreadsheet into a dictionary of lists of row objects, keyed by media type.
+    Store rows from CI_Sheet tab of spreadsheet into a dictionary of lists of row objects, keyed by media type.
 
     :param pn_sheet: openpyxl sheet object
     :param pn_rows: openpxyl rows object
@@ -41,8 +41,9 @@ def split_sheet_rows_ps1(pn_sheet, pn_rows, media_to_skip, new_pn_only=False):
         if row_num > 4:
             if row_num == 5 and not pn_sheet['G5'].value:
                 print "\nERROR: Cell G5 - First P/N must have a value in media column."
-                exit(1)
+                sys.exit(1)
             current_media_col = pn_sheet['G' + str(row_num)].value
+            part_number_count += 1
 
             # is this a new media set?
             if current_media_col:
@@ -67,14 +68,12 @@ def split_sheet_rows_ps1(pn_sheet, pn_rows, media_to_skip, new_pn_only=False):
                 new_part_number_count += 1
                 if new_pn_only:
                     media_sets[current_media].append(row)
-                    part_number_count += 1
                     # return to the top of the for loop
                     continue
 
             # if not on skipped media, add the row to the appropriate list in the media_sets dict
             if current_media and not current_media_type in media_to_skip:
                 media_sets[current_media].append(row)
-                part_number_count += 1
 
     print "\n{} total part number lines. {} parts " \
           "were changed.\n".format(part_number_count, new_part_number_count)
@@ -82,7 +81,8 @@ def split_sheet_rows_ps1(pn_sheet, pn_rows, media_to_skip, new_pn_only=False):
     return media_sets, media_set_order
 
 
-def extract_ps1_tab_part_nums(filename, all_parts=False, new_pn_only=False, pnr_list=None, pnr_warnings=[]):
+def extract_ps1_tab_part_nums(filename, pnr_list=None, all_parts=False, new_pn_only=False, pnr_warnings=[],
+                              invalid_revs_ok=False):
     """
     Open ECO spreadsheet, extract part numbers from the PS1 tab
 
@@ -102,19 +102,42 @@ def extract_ps1_tab_part_nums(filename, all_parts=False, new_pn_only=False, pnr_
     try:
         # openpyxl is a library for reading/writing Excel files.
         eco_form = openpyxl.load_workbook(filename)
+
     except openpyxl.exceptions.InvalidFileException:
-        print '\nERROR: Could not open ECO form at path:' \
-              '         {}\n\n       Is path correct?'.format(filename)
+        print '\nERROR: Could not open ECO form at path:\n' \
+              '       {}\n\n       Is path correct?'.format(filename)
         sys.exit(1)
 
-    # ECO form workbook must have a sheet called "PS1"
-    pn_sheet = eco_form.get_sheet_by_name('PS1')
+    # ECO form workbook must have a sheet named "CoverSheet"
+    cover_sheet = eco_form.get_sheet_by_name('CoverSheet')
+    try:
+        cover_rows = cover_sheet.rows
+
+    except AttributeError:
+        cover_sheet = eco_form.get_sheet_by_name('NewCoverSheet')
+
+        try:
+            cover_rows = cover_sheet.rows
+
+        except AttributeError:
+            print '\nERROR: No "CoverSheet" or "NewCoverSheet" tab on ECO form at path:\n' \
+                  '       {}'.format(filename)
+            sys.exit(1)
+
+    # ECO form workbook must have a sheet called "CI_Sheet"
+    pn_sheet = eco_form.get_sheet_by_name('CI_Sheet')
     try:
         pn_rows = pn_sheet.rows
     except AttributeError:
-        print '\nERROR: No "PS1" tab on ECO form at path:' \
-              '         {}'.format(filename)
-        sys.exit(1)
+        pn_sheet = eco_form.get_sheet_by_name('PS1')
+
+        try:
+            pn_rows = pn_sheet.rows
+
+        except AttributeError:
+            print '\nERROR: No "CI_Sheet" or "PS1" tab on ECO form at path:\n' \
+                  '       {}'.format(filename)
+            sys.exit(1)
 
     # convert pn_sheet.rows into a dict of row object lists, keyed by media keyword
     media_sets, media_set_order = split_sheet_rows_ps1(pn_sheet, pn_rows, media_to_skip, new_pn_only)
@@ -149,10 +172,10 @@ def extract_ps1_tab_part_nums(filename, all_parts=False, new_pn_only=False, pnr_
                 if not pn_sheet['A' + str(cell.row)].value:
                     if pn_sheet['B' + str(cell.row)].value:
                         print "ERROR: P/N present in cell B{x}, but A{x} is empty.".format(x=cell.row)
-                        exit(1)
+                        sys.exit(1)
                     elif pn_sheet['G' + str(cell.row)].value:
                         print "ERROR: P/N present in cell G{x}, but A{x} is empty.".format(x=cell.row)
-                        exit(1)
+                        sys.exit(1)
                     else:
                         continue
 
@@ -164,17 +187,17 @@ def extract_ps1_tab_part_nums(filename, all_parts=False, new_pn_only=False, pnr_
                     current_pn = cell.value
                     if not is_valid_part(current_pn):
                         print "ERROR: Cell A{x} contains an improperly-formatted part number.".format(x=cell.row)
-                        exit(1)
+                        sys.exit(1)
 
 
                 # "Cur Rev" column
                 if cell.column == "B":
                     if not cell.value:
                         print "ERROR: P/N present in cell A{x}, but B{x} is empty.".format(x=cell.row)
-                        exit(1)
+                        sys.exit(1)
                     if not is_valid_rev(cell.value):
                         print "ERROR: Cell B{x} contains an invalid revision.".format(x=cell.row)
-                        exit(1)
+                        sys.exit(1)
 
                     # if there's not a new revision, this is the revision we're using
                     if not pn_sheet['C' + str(cell.row)].value:
@@ -196,7 +219,7 @@ def extract_ps1_tab_part_nums(filename, all_parts=False, new_pn_only=False, pnr_
                 if cell.column == "C" and cell.value:
                     if not is_valid_rev(cell.value):
                         print "ERROR: ECO cell C{x} contains an invalid revision.".format(x=cell.row)
-                        exit(1)
+                        sys.exit(1)
 
                     if not Rev(pn_sheet['B' + str(cell.row)].value).next_rev.name == cell.value:
                         print "WARNING: Rev in C{x} is not the next valid rev after rev in B{x}.\n" \
@@ -208,14 +231,14 @@ def extract_ps1_tab_part_nums(filename, all_parts=False, new_pn_only=False, pnr_
                     if pnr_verify:
                         # For new parts, error if pn in PNRL and ECO# listed is not the current ECO.
                         if pnr_list.has_part(current_pn, current_rev):
-                            if pnr_list.parts[current_pn].revs[current_rev].eco != str(pn_sheet['H2'].value):
+                            if pnr_list.parts[current_pn].revs[current_rev].eco != str(cover_sheet['S2'].value):
                                 print "ERROR: ECO row {} -- new pn {} is marked in the\n       PN Reserve Log as " \
                                       "released on ECO {}, not " \
                                       "current ECO {}.".format(cell.row,
                                                                current_pn_plus_rev,
                                                                pnr_list.parts[current_pn].revs[current_rev].eco,
-                                                               str(pn_sheet['H2'].value))
-                                exit(1)
+                                                               str(cover_sheet['S2'].value))
+                                sys.exit(1)
 
                         else:
                             # For new parts, warning if pn/rev isn't in the PN Reserve Log yet
@@ -263,7 +286,7 @@ def extract_ps1_tab_part_nums(filename, all_parts=False, new_pn_only=False, pnr_
                         if not cell.value:
                             print 'ERROR: ECO cell C{x} has no value, so a value must be added to ' \
                                   'empty cell E{x}!'.format(x=cell.row)
-                            exit(1)
+                            sys.exit(1)
                         elif not cell.value == "dup":
 
                             # if -p/--pnr-verify was set, verify old P/N's vs PN Reserve log
@@ -277,7 +300,7 @@ def extract_ps1_tab_part_nums(filename, all_parts=False, new_pn_only=False, pnr_
                                                                        current_pn,
                                                                        cell.value,
                                                                        pnr_list.parts[current_pn].revs[current_rev].eco)
-                                    exit(1)
+                                    sys.exit(1)
                                 else:
                                     # Report if an old pn/rev combo is not in the PNR Log (report only once per pn/rev)
                                     if current_pn_plus_rev not in missing_from_pnr_warnings_issued:
@@ -305,7 +328,7 @@ def extract_ps1_tab_part_nums(filename, all_parts=False, new_pn_only=False, pnr_
                                                            cell.value,
                                                            part_numbers_already_used[current_pn_plus_rev],
                                                            old_part_numbers[current_pn_plus_rev][current_rev])
-                                    exit(1)
+                                    sys.exit(1)
 
                             # store the ECO# listed for the pn/rev on this row
                             old_part_numbers[current_pn_plus_rev][current_rev] = cell.value
@@ -318,7 +341,7 @@ def extract_ps1_tab_part_nums(filename, all_parts=False, new_pn_only=False, pnr_
                 if cell.column == "F":
                     if not cell.value:
                         print "ERROR: P/N present in cell A{x}, but F{x} is empty.".format(x=cell.row)
-                        exit(1)
+                        sys.exit(1)
                     new_indent_level = cell.style.alignment.indent
 
                     # this will only happen on the first line
@@ -388,7 +411,7 @@ def write_single_cid_file(contents_id_table, eol):
             output_file.write(line + "\n")
         except NameError:
             print "\nERROR: write_single_cid_file() was passed a tablefile without a media ID as the first line."
-            exit(1)
+            sys.exit(1)
 
     if not output_file.closed:
         output_file.close()
@@ -417,6 +440,8 @@ def make_parser():
                               help="print to one file (CONTENTS_ID.all)")
     output_group.add_argument('-a', '--all-parts', action='store_true', default=False,
                               help="include PNs that aren't on any media")
+    output_group.add_argument('-i', '--invalid-revs', action='store_true', default=False,
+                              help="allow invalid revisions (issue a warning)")
     output_group.add_argument('-e', type=str, choices=["unix", "dos"], default="unix",
                               help="set EOL type for files (default is unix)")
 
@@ -444,6 +469,7 @@ def main():
     # Convert parsed arguments from Namespace to dictionary
     arguments = vars(arguments)
 
+    invalid_revs_ok = arguments["invalid_revs"]
     new_pn_only = arguments["new_pn_only"]
 
     # -n automatically prints all parts
@@ -455,8 +481,8 @@ def main():
         pnr_list, pnr_warnings = pnr.extract_part_nums_pnr()
 
     # Extract ECO spreadsheet PNs in CONTENTS_ID format (returns a dict of multi-line strings, keyed to media type)
-    cid_tables, cid_table_order, pnr_warnings = extract_ps1_tab_part_nums(arguments["eco_file"],
-                                                        all_parts, new_pn_only, pnr_list, pnr_warnings)
+    cid_tables, cid_table_order, pnr_warnings = extract_ps1_tab_part_nums(arguments["eco_file"], pnr_list,
+                                                        all_parts, new_pn_only, pnr_warnings, invalid_revs_ok)
 
     # Set file output line endings to requested format.  One (and only one) will always be True.  Default is UNIX.
     if arguments["e"] == "dos":
@@ -499,7 +525,6 @@ def main():
             arguments["print_to_many"] = True
 
         if arguments["print_to_many"]:
-            print "\n"
             for table in cid_table_order:
                 # write_single_cid_file outputs everything after the media type line to a CONTENTS_ID.<media type> file.
                 write_single_cid_file(bdt_utils.pretty_table(cid_tables[table], 3), eol)
