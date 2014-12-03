@@ -1,9 +1,10 @@
-VERSION_STRING = "CID v0.22 - 12/03/2014"
+VERSION_STRING = "CID v0.23 - 12/03/2014"
 
 import argparse
 import sys
 import io
 import openpyxl  # third party open source library, https://openpyxl.readthedocs.org/en/latest/
+import cid_classes
 from cid_classes import *  # custom object defs & helper functions for this script
 import bdt_utils  # Benji's bag-o'-utility-functions
 import pnr
@@ -21,7 +22,7 @@ def split_sheet_rows_ps1(pn_sheet, pn_rows, media_to_skip, arguments):
     :param pn_sheet: openpyxl sheet object
     :param pn_rows: openpxyl rows object
     :param media_to_skip: controls which keywords in the media column mark PN blocks to skip
-    :param arguments: argparse arguments, formatted into a hash
+    :param arguments: argparse command line arguments, formatted into a hash
     :return: a tuple of values, including...
              - dict with lists of row objects, keyed by media type
              - a list of the keys in the returned dict, to preserve the order they're accessed in
@@ -87,7 +88,7 @@ def extract_ps1_tab_part_nums(arguments, pnr_list=None):
     """
     Open ECO spreadsheet, extract part numbers from the PS1 tab
 
-    :param arguments: argparse arguments, formatted into a hash
+    :param arguments: argparse command line arguments, formatted into a hash
     :param pnr_list: the contents of the part number reserve log, contained in a ListOfParts object
     :return: a tuple of values, including...
              - a dict where each value is a table represented by a list of lists, keyed by media type
@@ -482,8 +483,10 @@ def main():
     # Convert parsed arguments from Namespace to dictionary
     arguments = vars(arguments)
 
+    if arguments["invalid_revs"]:
+        cid_classes.VALID_REV_CHARS = VALID_AND_INVALID_REV_CHARS
+
     pnr_list = None
-    pnr_warnings = []
     if arguments["pnr_verify"]:
         pnr_list, pnr_warnings = pnr.extract_part_nums_pnr()
 
