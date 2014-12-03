@@ -210,8 +210,11 @@ def extract_ps1_tab_part_nums(arguments, pnr_list=None):
                         print "ERROR: P/N present in cell A{x}, but B{x} is empty.".format(x=cell.row)
                         sys.exit(1)
                     if not is_valid_rev(cell.value):
-                        print "ERROR: Cell B{x} contains an invalid revision.".format(x=cell.row)
-                        sys.exit(1)
+                        if arguments["invalid_revs"]:
+                            print "WARNING: Cell B{x} contains an invalid revision.".format(x=cell.row)
+                        else:
+                            print "ERROR: Cell B{x} contains an invalid revision.".format(x=cell.row)
+                            sys.exit(1)
 
                     # if there's not a new revision, this is the revision we're using
                     if not pn_sheet['C' + str(cell.row)].value:
@@ -232,8 +235,11 @@ def extract_ps1_tab_part_nums(arguments, pnr_list=None):
                 # "New Rev" column
                 if cell.column == "C" and cell.value:
                     if not is_valid_rev(cell.value):
-                        print "ERROR: ECO cell C{x} contains an invalid revision.".format(x=cell.row)
-                        sys.exit(1)
+                        if arguments["invalid_revs"]:
+                            print "WARNING: ECO cell C{x} contains an invalid revision.".format(x=cell.row)
+                        else:
+                            print "ERROR: ECO cell C{x} contains an invalid revision.".format(x=cell.row)
+                            sys.exit(1)
 
                     if not Rev(pn_sheet['B' + str(cell.row)].value).next_rev.name == cell.value:
                         print "WARNING: Rev in C{x} is not the next valid rev after rev in B{x}.\n" \

@@ -2,15 +2,27 @@ from functools import total_ordering
 import string
 import re
 
-# the chars in VALID_REV_CHARS are all the valid options for positions in the rev
+# The chars in VALID_REV_CHARS are all the valid options for positions in the rev
+# IMPORTANT:  if the "-i" flag is used, VALID_REV_CHARS is overwritten with val of VALID_AND_INVALID_REV_CHARS
 VALID_REV_CHARS = "-123456789ABCDEFGHJKLMNPRTUVWY"
-INVALID_REV_CHARS = "IOQSXZ"
 VALID_AND_INVALID_REV_CHARS = "-123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+INVALID_REV_CHARS = "IOQSXZ"
 
 
-def is_valid_rev(rev_text):
+def is_valid_rev(rev_text, mode=1):
+    """
+    :param rev_text: text of the rev being checked for validity
+    :param mode:  mode 2 checks that revs contain only chars in VALID_REV_CHARS, while
+    default mode 1 checks that revs contain only chars NOT in INVALID_REV_CHARS.  The
+    reason for the two modes is that VALID_REV_CHARS is reset if the -i/--invalid-revs
+    argument is present... if it's set we want to allow the Rev object to be created,
+    but still need to be able to detect that the Rev is invalid per company standards,
+    so we can issue a warning.
+    :return: True or False, depending on whether the selected mode flags the rev as valid
+    """
 
-    # Revisions 1-9 are legal, but converted to string. Larger integers will get rejected by statement after this one
+    # Revisions 1-9 are legal, but converted to string. Larger integers will get rejected by
+    # the statement after this one.
     if isinstance(rev_text, int) and rev_text < 10:
         rev_text = str(rev_text)
 
@@ -23,7 +35,10 @@ def is_valid_rev(rev_text):
 
     for char in rev_text:
 
-        if not char in VALID_REV_CHARS:
+        if char in INVALID_REV_CHARS and mode == 1:
+            return False
+
+        if not char in VALID_REV_CHARS and mode == 2:
             return False
 
         # the dash character is only valid if it's the only character in the rev
@@ -50,7 +65,13 @@ class Rev(object):
         self.name = str(name)
         self.eco = str(eco)
 
-        if not is_valid_rev(name):
+        # mode 2 checks that revs contain only chars in VALID_REV_CHARS, allowing this
+        # Rev object to be created if the Rev is invalid per the CM standards but the
+        # -i/--invalid-rev argument has been used.  We can't use mode 1 (checking that
+        # revs contain only chars NOT in INVALID_REV_CHARS, because that list isn't
+        # affected by the -i/--invalid-rev argument, i.e. Rev creation would fail on an
+        # invalid rev even if that argument were set.
+        if not is_valid_rev(name, mode=2):
             raise ValueError(str(name).strip() + " is not a valid rev!")
 
     def __eq__(self, other):
