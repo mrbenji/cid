@@ -476,8 +476,10 @@ def make_parser():
                              help="print only new part numbers, to file NEW_PARTS")
     special_meg.add_argument('-p', '--pnr-verify', action='store_true', default=False,
                              help="verify ECO PNs vs. Part Number Reserve Log")
-    special_meg.add_argument('-u', '--update-pnr', action='store_true', default=False,
-                             help="update Part Number Reserve Log with ECO PNs (future)")
+
+    # Writing to xlsm files doesn't currently work, and even writing to xlsx breaks formatting
+    # special_meg.add_argument('-u', '--update-pnr', action='store_true', default=False,
+    #                          help="update Part Number Reserve Log with ECO PNs (future)")
 
     return parser
 

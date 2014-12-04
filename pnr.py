@@ -3,8 +3,8 @@ import sys
 
 from cid_classes import *
 
-PNRL_PATH = r"\\us.ray.com\SAS\AST\eng\Operations\CM\Internal\Staff\CM_Submittals\PN_Reserve.xlsm"
-#PNRL_PATH = "PN_Reserve_copy.xlsm"
+#PNRL_PATH = r"\\us.ray.com\SAS\AST\eng\Operations\CM\Internal\Staff\CM_Submittals\PN_Reserve.xlsm"
+PNRL_PATH = "PN_Reserve_copy.xlsm"
 
 
 def extract_part_nums_pnr():
@@ -56,5 +56,8 @@ def extract_part_nums_pnr():
                     pnr_warnings.append(u"WARNING: Skipping PNR Log row {} -- illegal part number.".format(row_num))
                 if not is_valid_rev(part_rev):
                     pnr_warnings.append(u"WARNING: Skipping PNR Log row {} -- illegal revision.".format(row_num))
+
+    pn_sheet['A9312'].value = "test"
+    pnr_log.save("text.xlsx")
 
     return pnr_list, pnr_warnings
