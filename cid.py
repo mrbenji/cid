@@ -212,6 +212,7 @@ def extract_ps1_tab_part_nums(arguments, pnr_list=None):
                     if not is_valid_rev(cell.value):
                         if arguments["invalid_revs"]:
                             print "WARNING: CI_Sheet cell B{x} contains an invalid revision.".format(x=cell.row)
+                            print "         Script execution continuing because -i argument was used."
                         else:
                             print "ERROR: CI_Sheet cell B{x} contains an invalid revision.".format(x=cell.row)
                             print "       If an exception has been approved, use -i argument to override."
@@ -238,6 +239,7 @@ def extract_ps1_tab_part_nums(arguments, pnr_list=None):
                     if not is_valid_rev(cell.value):
                         if arguments["invalid_revs"]:
                             print "WARNING: CI_Sheet cell C{x} contains an invalid revision.".format(x=cell.row)
+                            print "         Script execution continuing because -i argument was used."
                         else:
                             print "ERROR: CI_Sheet cell C{x} contains an invalid revision.".format(x=cell.row)
                             print "       If an exception has been approved, use -i argument to override."
