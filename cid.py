@@ -78,7 +78,7 @@ def split_sheet_rows_ps1(pn_sheet, pn_rows, media_to_skip, arguments):
             if current_media and not current_media_type in media_to_skip:
                 media_sets[current_media].append(row)
 
-    print "\n{} total part number lines. {} parts " \
+    print "\n{} total configuration items. {} CIs " \
           "were changed.\n".format(part_number_count, new_part_number_count)
 
     return media_sets, media_set_order
@@ -212,10 +212,10 @@ def extract_ps1_tab_part_nums(arguments, pnr_list=None):
                     if not is_valid_rev(cell.value):
                         if arguments["invalid_revs"]:
                             print "WARNING: CI_Sheet cell B{x} contains an invalid revision.".format(x=cell.row)
-                            print "         Script execution continuing because -i argument was used."
+                            print "         Script execution continuing because the -i argument was used."
                         else:
                             print "ERROR: CI_Sheet cell B{x} contains an invalid revision.".format(x=cell.row)
-                            print "       If an exception has been approved, use -i argument to override."
+                            print "       If an exception was approved use the -i argument to override."
                             sys.exit(1)
 
                     # if there's not a new revision, this is the revision we're using
@@ -239,10 +239,10 @@ def extract_ps1_tab_part_nums(arguments, pnr_list=None):
                     if not is_valid_rev(cell.value):
                         if arguments["invalid_revs"]:
                             print "WARNING: CI_Sheet cell C{x} contains an invalid revision.".format(x=cell.row)
-                            print "         Script execution continuing because -i argument was used."
+                            print "         Script execution continuing because the -i argument was used."
                         else:
                             print "ERROR: CI_Sheet cell C{x} contains an invalid revision.".format(x=cell.row)
-                            print "       If an exception has been approved, use -i argument to override."
+                            print "       If an exception was approved use the -i argument to override."
                             sys.exit(1)
 
                     if not (Rev(pn_sheet['B' + str(cell.row)].value).next_rev.name == cell.value) and is_valid_rev(
