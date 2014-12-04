@@ -1,11 +1,11 @@
-VERSION_STRING = "CID v0.26 - 12/03/2014"
+VERSION_STRING = "CID v0.27 - 12/03/2014"
 
 import argparse
 import sys
 import io
 import openpyxl  # third party open source library, https://openpyxl.readthedocs.org/en/latest/
-import cid_classes
 from cid_classes import *  # custom object defs & helper functions for this script
+import cid_classes # re-import to allow alternate means of access to constants in this module
 import bdt_utils  # Benji's bag-o'-utility-functions
 import pnr
 
@@ -99,9 +99,7 @@ def extract_ps1_tab_part_nums(arguments, pnr_list=None):
     invalid_revs_ok = arguments["invalid_revs"]
 
     # -n automatically prints all parts
-    all_parts = arguments["all_parts"] or arguments["new_pn_only"]
-
-    if all_parts:
+    if arguments["all_parts"] or arguments["new_pn_only"]:
         media_to_skip = []
     else:
         media_to_skip = HAS_NO_MEDIA
@@ -124,13 +122,15 @@ def extract_ps1_tab_part_nums(arguments, pnr_list=None):
         cover_rows = cover_sheet.rows
 
     except AttributeError:
+
+        # one more attempt to find cover sheet, using original name
         cover_sheet = eco_form.get_sheet_by_name('NewCoverSheet')
 
         try:
             cover_rows = cover_sheet.rows
 
         except AttributeError:
-            print '\nERROR: No "CoverSheet" or "NewCoverSheet" tab on ECO form at path:\n' \
+            print '\nERROR: No "CoverSheet" or "NewCoverSheet" tab in ECO form at path:\n' \
                   '       {}'.format(arguments["eco_file"])
             sys.exit(1)
 
@@ -139,13 +139,15 @@ def extract_ps1_tab_part_nums(arguments, pnr_list=None):
     try:
         pn_rows = pn_sheet.rows
     except AttributeError:
+
+        # one more attempt to find CI/PN sheet, using original name
         pn_sheet = eco_form.get_sheet_by_name('PS1')
 
         try:
             pn_rows = pn_sheet.rows
 
         except AttributeError:
-            print '\nERROR: No "CI_Sheet" or "PS1" tab on ECO form at path:\n' \
+            print '\nERROR: No "CI_Sheet" or "PS1" tab in ECO form at path:\n' \
                   '       {}'.format(arguments["eco_file"])
             sys.exit(1)
 
@@ -168,7 +170,9 @@ def extract_ps1_tab_part_nums(arguments, pnr_list=None):
         current_indent_level = 0
         cid_tables[set_name] = []
         cid_table_order.append(set_name)
-        # pn_table is a reference to cid_tables[set_name], not a copy
+
+        # pn_table is a reference to cid_tables[set_name], not a copy,
+        # so updates to it will be reflected in the original dict
         pn_table = cid_tables[set_name]
 
         for row in media_sets[set_name]:

@@ -3,16 +3,20 @@ import sys
 
 from cid_classes import *
 
-#PNRL_PATH = r"\\us.ray.com\SAS\AST\eng\Operations\CM\Internal\Staff\CM_Submittals\PN_Reserve.xlsm"
-PNRL_PATH = "PN_Reserve_copy.xlsm"
+PNRL_PATH = r"\\us.ray.com\SAS\AST\eng\Operations\CM\Internal\Staff\CM_Submittals\PN_Reserve.xlsm"
+#PNRL_PATH = "PN_Reserve_copy.xlsm"
 
 
 def extract_part_nums_pnr():
     """
     Extract part numbers from the part number reserve log, return them as a dict keyed by P/N
 
-    :return: contents of part number reserve log main worksheet, formatted as a dict.  Values are
-    lists of dicts {rev:ECO}, keys are base p/n.
+    :return: a tuple of values, including...
+
+     - contents of part number reserve log main worksheet, formatted as a dict.
+       Values are lists of dicts {rev:ECO}, keys are base p/n.
+
+     - a list of warnings generated during PN Reserve Log extraction, ex. invalid part numbers or revs
     """
 
     try:
