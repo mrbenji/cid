@@ -1,4 +1,4 @@
-VERSION_STRING = "CID v0.27 - 12/03/2014"
+VERSION_STRING = "CID v1.0 - 12/03/2014"
 
 import argparse
 import sys
