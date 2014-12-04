@@ -113,11 +113,19 @@ class Rev(object):
 
         if VALID_REV_CHARS.find(self.name[-1]) in range(0, 10):
             new_name = self.name[:-2] + VALID_REV_CHARS[VALID_REV_CHARS.find(self.name[-2:-1])+1]
-            return Rev(new_name)
+
+            # we never want to suggest an invalid next_rev, even if we're in -i/--invalid-revs mode
+            if not is_valid_rev(new_name):
+                return Rev(new_name).next_rev
+            else:
+                return Rev(new_name)
 
         if VALID_REV_CHARS.find(self.name[-1]) < 29:
             new_name = self.name[0:-1] + VALID_REV_CHARS[VALID_REV_CHARS.find(self.name[-1]) + 1]
-            return Rev(new_name)
+            if not is_valid_rev(new_name):
+                return Rev(new_name).next_rev
+            else:
+                return Rev(new_name)
 
         if self.name[-1] == "Y":
             new_name = self.name[0:-1] + "AA"

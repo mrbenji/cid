@@ -3,8 +3,8 @@ import sys
 
 from cid_classes import *
 
-PNRL_PATH = r"\\us.ray.com\SAS\AST\eng\Operations\CM\Internal\Staff\CM_Submittals\PN_Reserve.xlsm"
-#PNRL_PATH = "PN_Reserve_copy.xlsm"
+#PNRL_PATH = r"\\us.ray.com\SAS\AST\eng\Operations\CM\Internal\Staff\CM_Submittals\PN_Reserve.xlsm"
+PNRL_PATH = "PN_Reserve_copy.xlsm"
 
 
 def extract_part_nums_pnr():
