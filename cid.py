@@ -423,8 +423,8 @@ def extract_ps1_tab_part_nums(arguments, pnr_list=None):
                 if cell.column == "H":
                     if cell.value:
                         if len(cell.value.replace('.iso', '')) > 16:
-                            print 'WARNING: ISO name in CI_Sheet cell H{} is longer than 16 chars,\n' \
-                                  '         is the volume name in your build instructions shorter?'.format(cell.row)
+                            print 'WARNING: ISO name in CI_Sheet cell H{} is longer than 16 chars.\n' \
+                                  '         Is vol name in build instructions <= 16 chars?'.format(cell.row)
 
     return cid_tables, cid_table_order, pnr_warnings
 
