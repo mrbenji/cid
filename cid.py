@@ -1,11 +1,11 @@
-VERSION_STRING = "CID v1.0 - 12/03/2014"
+VERSION_STRING = "CID v1.01 - 12/04/2014"
 
 import argparse
 import sys
 import io
 import openpyxl  # third party open source library, https://openpyxl.readthedocs.org/en/latest/
 from cid_classes import *  # custom object defs & helper functions for this script
-import cid_classes # re-import to allow alternate means of access to constants in this module
+import cid_classes  # re-import to allow alternate means of access to constants in this module
 import bdt_utils  # Benji's bag-o'-utility-functions
 import pnr
 
@@ -179,7 +179,7 @@ def extract_ps1_tab_part_nums(arguments, pnr_list=None):
             for cell in row:
 
                 # we only care about certain columns
-                if cell.column not in "ABCEFG":
+                if cell.column not in "ABCEFGH":
                     continue
 
                 # Basic line validation: if col A is blank, there should be no values in B or G.
@@ -201,7 +201,8 @@ def extract_ps1_tab_part_nums(arguments, pnr_list=None):
                     pn_table[-1].append(cell.value)
                     current_pn = cell.value
                     if not is_valid_part(current_pn):
-                        print "ERROR: CI_Sheet cell A{x} contains an improperly-formatted part number.".format(x=cell.row)
+                        print "ERROR: CI_Sheet cell A{x} contains an improperly-formatted part number.".format(
+                            x=cell.row)
                         if is_valid_part(current_pn.strip()):
                             print "       Check for leading or trailing whitespace."
 
@@ -323,12 +324,11 @@ def extract_ps1_tab_part_nums(arguments, pnr_list=None):
                                 # Error if the ECO# listed for a released pn/rev doesn't match what's in the PNR Log
                                 if pnr_list.has_part(current_pn, current_rev) \
                                         and pnr_list.parts[current_pn].revs[current_rev].eco != str(cell.value):
-                                    print 'ERROR: On CI_Sheet row {}, {} is marked as being released on \n       ECO {}. ' \
-                                          'This conflicts with the PN Reserve Log, where\n       it is marked as ' \
-                                          'released on ECO {}.'.format(cell.row,
-                                                                       current_pn,
-                                                                       cell.value,
-                                                                       pnr_list.parts[current_pn].revs[current_rev].eco)
+                                    print 'ERROR: On CI_Sheet row {}, {} is marked as being released on \n       ' \
+                                          'ECO {}. This conflicts with the PN Reserve Log, where\n       ' \
+                                          'it is marked as released ' \
+                                          'on ECO {}.'.format(cell.row, current_pn, cell.value,
+                                                              pnr_list.parts[current_pn].revs[current_rev].eco)
                                     sys.exit(1)
                                 else:
                                     # Report if an old pn/rev combo is not in the PNR Log (report only once per pn/rev)
@@ -408,6 +408,12 @@ def extract_ps1_tab_part_nums(arguments, pnr_list=None):
                     if skip_media:
                         pn_table.pop()
 
+                # "ISO Name" column
+                if cell.column == "H":
+                    if cell.value:
+                        if len(cell.value.replace('.iso','')) > 16:
+                            print 'WARNING: CI_Sheet cell H{} has an ISO name longer than 16 chars!'.format(cell.row)
+
     return cid_tables, cid_table_order, pnr_warnings
 
 
@@ -483,7 +489,7 @@ def make_parser():
 
     # Writing to xlsm files doesn't currently work, and even writing to xlsx breaks formatting
     # special_meg.add_argument('-u', '--update-pnr', action='store_true', default=False,
-    #                          help="update Part Number Reserve Log with ECO PNs (future)")
+    # help="update Part Number Reserve Log with ECO PNs (future)")
 
     return parser
 
@@ -535,8 +541,6 @@ def main():
                 if cid_tables[table]:
                     f.write(bdt_utils.pretty_table(cid_tables[table], 3))
                     f.write(u"\n\n")
-    elif arguments["update_pnr"]:
-        print "\nThis feature is not yet implemented."
     else:
         # Combine all CONTENTS_IDs into one document.  Can be combined with -m and/or -s.
         if arguments["print_to_one"]:
