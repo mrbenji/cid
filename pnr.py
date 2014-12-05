@@ -59,7 +59,8 @@ def extract_part_nums_pnr():
                 if not is_valid_part(part_num):
                     pnr_warnings.append(u"WARNING: Skipping PNR Log row {} -- illegal part number.".format(row_num))
                 if not is_valid_rev(part_rev):
-                    pnr_warnings.append(u"WARNING: Skipping PNR Log row {} -- illegal revision.".format(row_num))
+                    pnr_warnings.append(u"WARNING: Skipping PNR Log row {} -- illegal revision {}.".format(row_num,
+                                                                                                           part_rev))
 
     pn_sheet['A9312'].value = "test"
     pnr_log.save("text.xlsx")
