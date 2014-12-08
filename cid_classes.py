@@ -21,9 +21,8 @@ def is_valid_rev(rev_text, mode=1):
     :return: True or False, depending on whether the selected mode flags the rev as valid
     """
 
-    # Revisions 1-9 are legal, but converted to string. Larger integers will get rejected by
-    # the statement after this one.
-    if isinstance(rev_text, int) and rev_text < 10:
+    # Numeric revisions are legal for redline releases, but must be converted to string.
+    if isinstance(rev_text, int):
         rev_text = str(rev_text)
 
     # valid revs must be non-zero-length strings
@@ -45,12 +44,8 @@ def is_valid_rev(rev_text, mode=1):
         if char == "-" and len(rev_text) > 1:
             return False
 
-        # non-redline revisions cannot contain more than one digit
         if char.isdigit():
-            if rev_has_digit:
-                return False
-            else:
-                rev_has_digit = True
+            rev_has_digit = True
 
         # letters can't follow digits in a revision
         if char.isalpha() and rev_has_digit:

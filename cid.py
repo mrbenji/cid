@@ -1,4 +1,4 @@
-VERSION_STRING = "CID v1.06 - 12/08/2014"
+VERSION_STRING = "CID v1.07 - 12/08/2014"
 
 import argparse
 import sys
@@ -86,7 +86,7 @@ def split_sheet_rows_ps1(pn_sheet, pn_rows, media_to_skip, arguments):
     return media_sets, media_set_order
 
 
-def extract_ps1_tab_part_nums(arguments, pnr_list=None):
+def extract_ps1_tab_part_nums(arguments, pnr_list=None, pnr_warnings=[]):
     """
     Open ECO spreadsheet, extract part numbers from the PS1 tab
 
@@ -164,7 +164,6 @@ def extract_ps1_tab_part_nums(arguments, pnr_list=None):
     prev_rev = ""
     part_numbers_already_used = {}
     old_part_numbers = {}
-    pnr_warnings = []
     missing_from_pnr_warnings_issued = []
     skip_media = False
 
@@ -533,7 +532,7 @@ def main():
         pnr_list, pnr_warnings = pnr.extract_part_nums_pnr()
 
     # Extract ECO spreadsheet PNs in CONTENTS_ID format (returns a dict of multi-line strings, keyed to media type)
-    cid_tables, cid_table_order, pnr_warnings = extract_ps1_tab_part_nums(arguments, pnr_list)
+    cid_tables, cid_table_order, pnr_warnings = extract_ps1_tab_part_nums(arguments, pnr_list, pnr_warnings)
 
     # Set file output line endings to requested format.  One (and only one) will always be True.  Default is UNIX.
     if arguments["e"] == "dos":

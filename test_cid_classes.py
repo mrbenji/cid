@@ -31,7 +31,7 @@ class CidClassesTest(unittest.TestCase):
 
     def test_invalid_revs(self):
         print 'Verifying that revs are being properly flagged as invalid...'
-        for bad_rev in ["I", "AZ", "11", "B21", "1B1", "-A", "1C"]:
+        for bad_rev in ["I", "AZ", "1B1", "-A", "1C"]:
             print " {}".format(bad_rev),
             with self.assertRaises(ValueError):
                 Rev(bad_rev)
@@ -84,7 +84,7 @@ class CidClassesTest(unittest.TestCase):
 
         # add_rev should raise a ValueError if we attempt to add an invalid rev.
         with self.assertRaises(ValueError):
-            my_part.add_rev("11")
+            my_part.add_rev("1B")
 
         with self.assertRaises(ValueError):
             my_part.add_rev("AO")
