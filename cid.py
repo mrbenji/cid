@@ -1,4 +1,4 @@
-VERSION_STRING = "CID v1.04 - 12/05/2014"
+VERSION_STRING = "CID v1.05 - 12/08/2014"
 
 import argparse
 import sys
@@ -46,7 +46,9 @@ def split_sheet_rows_ps1(pn_sheet, pn_rows, media_to_skip, arguments):
                 print "\nERROR: CI_Sheet cell G5 - First P/N must have a value in media column."
                 sys.exit(1)
             current_media_col = pn_sheet['G' + str(row_num)].value
-            part_number_count += 1
+
+            if pn_sheet['A' + str(row_num)].value:
+                part_number_count += 1
 
             # is this a new media set?
             if current_media_col:
@@ -264,6 +266,11 @@ def extract_ps1_tab_part_nums(arguments, pnr_list=None):
                                                              pn_sheet['B' + str(cell.row)].value,
                                                              cell.row
                         )
+
+                    if pn_sheet['E' + str(cell.row)].value and str(pn_sheet['E' + str(cell.row)].value).isdigit():
+                        print 'ERROR: CI_Sheet row {x} -- there cannot be both a new rev \n       ' \
+                              'in C{x} and an ECO number in E{x}.'.format(x=cell.row)
+                        sys.exit(1)
 
                     current_rev = cell.value
                     current_pn_plus_rev = current_pn + " Rev. {}".format(current_rev)
