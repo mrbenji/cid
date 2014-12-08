@@ -1,4 +1,4 @@
-VERSION_STRING = "CID v1.05 - 12/08/2014"
+VERSION_STRING = "CID v1.06 - 12/08/2014"
 
 import argparse
 import sys
@@ -196,7 +196,6 @@ def extract_ps1_tab_part_nums(arguments, pnr_list=None):
                     else:
                         continue
 
-
                 # "Affected Documentation" column
                 if cell.column == "A":
                     pn_table.append([])
@@ -209,7 +208,6 @@ def extract_ps1_tab_part_nums(arguments, pnr_list=None):
                             print "       Check for leading or trailing whitespace."
 
                         sys.exit(1)
-
 
                 # "Cur Rev" column
                 if cell.column == "B":
@@ -241,7 +239,6 @@ def extract_ps1_tab_part_nums(arguments, pnr_list=None):
 
                     else:
                         prev_rev = cell.value
-
 
                 # "New Rev" column
                 if cell.column == "C" and cell.value:
@@ -310,7 +307,6 @@ def extract_ps1_tab_part_nums(arguments, pnr_list=None):
 
                     # Replace p/n in last table "cell" with pn+revision
                     pn_table[-1][-1] = current_pn_plus_rev
-
 
                 # "ECO" column -- not useful for CONTENTS_ID, but used for form validation.
                 if cell.column == "E":
@@ -407,20 +403,18 @@ def extract_ps1_tab_part_nums(arguments, pnr_list=None):
                         pn_table[-1][-1] = "\n" + pn_table[-1][-1]
                     pn_table[-1].append(cell.value)
 
-
                 # "Media" column
                 if cell.column == "G":
                     if cell.value:
-                        if not current_media == cell.value:
-                            current_media = cell.value
-                            if current_media.lower() in media_to_skip:
-                                skip_media = True
-                            else:
-                                # if on a new, non-skipped media type, we pre-pend a line with the first part number
-                                skip_media = False
-                                hold_row = pn_table.pop()
-                                pn_table.append([current_media + ":" + set_name, ""])
-                                pn_table.append(hold_row)
+                        current_media = cell.value
+                        if current_media.lower() in media_to_skip:
+                            skip_media = True
+                        else:
+                            # if on a new, non-skipped media type, we pre-pend a line with the first part number
+                            skip_media = False
+                            hold_row = pn_table.pop()
+                            pn_table.append([current_media + ":" + set_name, ""])
+                            pn_table.append(hold_row)
 
                     # If we're on a row for media we skip, remove entire row from results
                     if skip_media:
@@ -429,9 +423,11 @@ def extract_ps1_tab_part_nums(arguments, pnr_list=None):
                 # "ISO Name" column
                 if cell.column == "H":
                     if cell.value:
-                        if len(cell.value.replace('.iso', '')) > 16:
-                            print 'WARNING: ISO name in CI_Sheet cell H{} is longer than 16 chars.\n' \
-                                  '         Is vol name in build instructions <= 16 chars?'.format(cell.row)
+                        iso_name_len = len(cell.value.replace('.iso', ''))
+                        if iso_name_len > 16:
+                            print 'WARNING: ISO name in CI_Sheet cell H{} is {} chars. Have you verified that\n' \
+                                  '         the volume name in the build instructions is ' \
+                                  '<= 16 chars?'.format(cell.row, iso_name_len)
 
     return cid_tables, cid_table_order, pnr_warnings
 
@@ -443,6 +439,8 @@ def write_single_cid_file(contents_id_table, eol):
     :param contents_id_table: a table of part numbers, formatted into a multi-line string by bdt.pretty_table()
     :param eol: the end of line format to use, will be \n for UNIX, \r\n for DOS.
     """
+
+    stripped_line = ""
 
     # break contents_id "table" into a list of lines
     for line in contents_id_table.split("\n"):
@@ -464,7 +462,9 @@ def write_single_cid_file(contents_id_table, eol):
             # write line to file, passes along blank lines, too
             output_file.write(line + "\n")
         except NameError:
-            print "\nERROR: write_single_cid_file() was passed a tablefile without a media ID as the first line."
+            print "\nERROR: write_single_cid_file() was passed an empty or improperly-formatted table." \
+                  "Table contents:\n{}\nstripped_line:" \
+                  "\n{}".format(str(contents_id_table), stripped_line)
             sys.exit(1)
 
     if not output_file.closed:
