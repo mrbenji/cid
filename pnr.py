@@ -23,7 +23,7 @@ def extract_part_nums_pnr():
         # openpyxl is a library for reading/writing Excel files.
         pnr_log = openpyxl.load_workbook(PNRL_PATH)
     except openpyxl.exceptions.InvalidFileException:
-        print '\nERROR: Could not open Part Number Reserve Log at path:' \
+        print '\nPNR ERROR: Could not open Part Number Reserve Log at path:' \
               '\n       {}'.format(PNRL_PATH)
         sys.exit(1)
 
@@ -32,7 +32,7 @@ def extract_part_nums_pnr():
     try:
         pn_rows = pn_sheet.rows
     except AttributeError:
-        print '\nERROR: No PN_Rev tab on Part Number Reserve Log at path:' \
+        print '\nPNR ERROR: No PN_Rev tab on Part Number Reserve Log at path:' \
               '\n\n     {}'.format(PNRL_PATH)
         sys.exit(1)
 
@@ -41,7 +41,8 @@ def extract_part_nums_pnr():
     pnr_warnings = []
 
     if not pn_sheet['A1'].value:
-        print "\nERROR: PNR Log, cell A1 - first cell of part number reserve form is blank."
+        print "\nPNR ERROR: PNR Log does not appear to be valid!" \
+              "Cell A1 of {} is blank.".format(PNRL_PATH)
         sys.exit(1)
 
     for row in pn_rows:
@@ -57,9 +58,9 @@ def extract_part_nums_pnr():
 
             except ValueError:
                 if not is_valid_part(part_num):
-                    pnr_warnings.append(u"WARNING: Skipping PNR Log row {} -- illegal part number.".format(row_num))
+                    pnr_warnings.append(u"PNR WARNING: Skipping PNR Log row {} -- illegal part number.".format(row_num))
                 if not is_valid_rev(part_rev):
-                    pnr_warnings.append(u"WARNING: Skipping PNR Log row {} -- illegal revision {}.".format(row_num,
+                    pnr_warnings.append(u"PNR WARNING: Skipping PNR Log row {} -- illegal revision {}.".format(row_num,
                                                                                                            part_rev))
 
     return pnr_list, pnr_warnings

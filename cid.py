@@ -1,4 +1,4 @@
-VERSION_STRING = "CID v1.07 - 12/08/2014"
+VERSION_STRING = "CID v1.10 - 12/09/2014"
 
 import argparse
 import sys
@@ -57,10 +57,10 @@ def split_sheet_rows_ps1(pn_sheet, pn_rows, media_to_skip, arguments):
                 new_rev = pn_sheet['C' + str(row_num)].value
 
                 if new_rev:
-                    current_media = "{}-{}".format(pn_sheet['A' + str(row_num)].value,
+                    current_media = "{}-{}".format(pn_sheet['A' + str(row_num)].value.strip(),
                                                    pn_sheet['C' + str(row_num)].value)
                 elif curr_rev:
-                    current_media = "{}-{}".format(pn_sheet['A' + str(row_num)].value,
+                    current_media = "{}-{}".format(pn_sheet['A' + str(row_num)].value.strip(),
                                                    pn_sheet['C' + str(row_num)].value)
 
                 # if this is a media type we want a CONTENTS_ID for, crate an empty list for it in the media_sets dict
@@ -199,13 +199,9 @@ def extract_ps1_tab_part_nums(arguments, pnr_list=None, pnr_warnings=[]):
                 if cell.column == "A":
                     pn_table.append([])
                     pn_table[-1].append(cell.value)
-                    current_pn = cell.value
+                    current_pn = cell.value.strip()
                     if not is_valid_part(current_pn):
-                        print "ERROR: CI_Sheet cell A{x} contains an improperly-formatted part number.".format(
-                            x=cell.row)
-                        if is_valid_part(current_pn.strip()):
-                            print "       Check for leading or trailing whitespace."
-
+                        print "ERROR: CI_Sheet cell A{} contains an improperly-formatted part number.".format(cell.row)
                         sys.exit(1)
 
                 # "Cur Rev" column
@@ -272,6 +268,7 @@ def extract_ps1_tab_part_nums(arguments, pnr_list=None, pnr_warnings=[]):
                     current_pn_plus_rev = current_pn + " Rev. {}".format(current_rev)
 
                     if pnr_verify:
+
                         # For new parts, error if pn in PNRL and ECO# listed is not the current ECO.
                         if pnr_list.has_part(current_pn, current_rev):
                             if pnr_list.parts[current_pn].revs[current_rev].eco != str(cover_sheet['S2'].value):
@@ -335,14 +332,14 @@ def extract_ps1_tab_part_nums(arguments, pnr_list=None, pnr_warnings=[]):
                             # if -p/--pnr-verify was set, verify old P/N's vs PN Reserve log
                             if pnr_verify:
                                 # Error if the ECO# listed for a released pn/rev doesn't match what's in the PNR Log
-                                if pnr_list.has_part(current_pn, current_rev) \
-                                        and pnr_list.parts[current_pn].revs[current_rev].eco != str(cell.value):
-                                    print 'ERROR: On CI_Sheet row {}, {} is marked as being released on \n       ' \
-                                          'ECO {}. This conflicts with the PN Reserve Log, where\n       ' \
-                                          'it is marked as released ' \
-                                          'on ECO {}.'.format(cell.row, current_pn, cell.value,
-                                                              pnr_list.parts[current_pn].revs[current_rev].eco)
-                                    sys.exit(1)
+                                if pnr_list.has_part(current_pn, current_rev):
+                                    if pnr_list.parts[current_pn].revs[current_rev].eco != str(cell.value):
+                                        print 'ERROR: On CI_Sheet row {}, {} is marked as being released on \n       ' \
+                                              'ECO {}. This conflicts with the PN Reserve Log, where\n       ' \
+                                              'it is marked as released ' \
+                                              'on ECO {}.'.format(cell.row, current_pn, cell.value,
+                                                                  pnr_list.parts[current_pn].revs[current_rev].eco)
+                                        sys.exit(1)
                                 else:
                                     # Report if an old pn/rev combo is not in the PNR Log (report only once per pn/rev)
                                     if current_pn_plus_rev not in missing_from_pnr_warnings_issued:
@@ -528,6 +525,7 @@ def main():
         cid_classes.VALID_REV_CHARS = VALID_AND_INVALID_REV_CHARS
 
     pnr_list = None
+    pnr_warnings = []
     if arguments["pnr_verify"]:
         pnr_list, pnr_warnings = pnr.extract_part_nums_pnr()
 
