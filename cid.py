@@ -1,4 +1,4 @@
-VERSION_STRING = "CID v1.10 - 12/09/2014"
+VERSION_STRING = "CID v1.11 - 12/10/2014"
 
 import argparse
 import sys
@@ -395,7 +395,7 @@ def extract_ps1_tab_part_nums(arguments, pnr_list=None, pnr_warnings=[]):
                     pn_table[-1][-1] = "  " * int("{:.0f}".format(current_indent_level)) + pn_table[-1][-1]
 
                     # if the indention level was reduced, add blank line to improve legibility
-                    if indent_reduced:
+                    if indent_reduced and current_indent_level == 0:
                         pn_table[-1][-1] = "\n" + pn_table[-1][-1]
                     pn_table[-1].append(cell.value)
 
