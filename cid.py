@@ -281,10 +281,12 @@ def extract_ps1_tab_part_nums(arguments, pnr_list=None, pnr_warnings=[]):
                                 sys.exit(1)
 
                         else:
-                            # For new parts, warning if pn/rev isn't in the PN Reserve Log yet
-                            pnr_warnings.append(u"WARNING: CI_Sheet row {} - part {} needs to be "
-                                                u"added to PN Reserve Log.".format(cell.row,
-                                                                                   current_pn_plus_rev))
+                            # Report if a new pn/rev combo is not in the PNR Log (report only once per pn/rev)
+                            if current_pn_plus_rev not in missing_from_pnr_warnings_issued:
+                                pnr_warnings.append(u"WARNING: CI_Sheet row {} - part {} needs to be "
+                                                    u"added to PN Reserve Log.".format(cell.row,
+                                                                                       current_pn_plus_rev))
+                                missing_from_pnr_warnings_issued.append(current_pn_plus_rev)
 
                             # For new parts, warning if if new rev doesn't follow previous rev in PNRL
                             if pnr_list.has_part(current_pn, prev_rev):
@@ -311,9 +313,9 @@ def extract_ps1_tab_part_nums(arguments, pnr_list=None, pnr_warnings=[]):
                     # "dup" in the "ECO" column.  Is this a dup not marked "dup?"
                     if current_pn_plus_rev in part_numbers_already_used.keys() and not cell.value == "dup" \
                             and pn_sheet['C' + str(cell.row)].value:
-                        print 'WARNING: CI_Sheet row {} has duplicate P/N {},\n         last used on row {} but ' \
-                              'not marked "dup"'.format(cell.row, current_pn_plus_rev,
-                                                        part_numbers_already_used[current_pn_plus_rev])
+                        print 'WARNING: CI_Sheet row {} has duplicate P/N {}\n         which is not marked "dup." ' \
+                              'Last used on row {}.'.format(cell.row, current_pn_plus_rev,
+                                                            part_numbers_already_used[current_pn_plus_rev])
 
                     # Next: is this a p/n marked "dup" that isn't actually a dup?
                     elif current_pn_plus_rev not in part_numbers_already_used.keys() and cell.value == "dup" \
@@ -325,7 +327,7 @@ def extract_ps1_tab_part_nums(arguments, pnr_list=None, pnr_warnings=[]):
                     elif not pn_sheet['C' + str(cell.row)].value:
                         if not cell.value:
                             if pnr_verify and pnr_list.has_part(current_pn, current_rev) and \
-                                    pnr_list.parts[current_pn].revs[current_rev].eco != str(cell.value):
+                                            pnr_list.parts[current_pn].revs[current_rev].eco != str(cell.value):
                                 print 'ERROR: CI_Sheet row {} lists {}, which the PNR Log\n' \
                                       '       lists as released on ECO {}. Cell E{} should contain ' \
                                       "'{}'.".format(cell.row, current_pn_plus_rev,
