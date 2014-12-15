@@ -1,4 +1,4 @@
-VERSION_STRING = "CID v1.11 - 12/10/2014"
+VERSION_STRING = "CID v1.12 - 12/15/2014"
 
 import argparse
 import sys
@@ -253,10 +253,10 @@ def extract_ps1_tab_part_nums(arguments, pnr_list=None, pnr_warnings=[]):
                         print "WARNING: CI_Sheet cell C{} lists new rev '{}'.  Expected '{}', the first\n" \
                               "         valid rev after cur " \
                               "rev '{}' (cell B{}).".format(cell.row,
-                                                             cell.value,
-                                                             Rev(pn_sheet['B' + str(cell.row)].value).next_rev.name,
-                                                             pn_sheet['B' + str(cell.row)].value,
-                                                             cell.row
+                                                            cell.value,
+                                                            Rev(pn_sheet['B' + str(cell.row)].value).next_rev.name,
+                                                            pn_sheet['B' + str(cell.row)].value,
+                                                            cell.row
                         )
 
                     if pn_sheet['E' + str(cell.row)].value and str(pn_sheet['E' + str(cell.row)].value).isdigit():
@@ -293,10 +293,10 @@ def extract_ps1_tab_part_nums(arguments, pnr_list=None, pnr_warnings=[]):
                                     error_msg = u"WARNING: PN Reserve Log lists the prev rev for {} as '{}'.\n" \
                                                 u"         Expected new rev '{}' in CI_Sheet " \
                                                 u"cell C{}, instead of'{}'.".format(current_pn,
-                                                                         prev_rev,
-                                                                         expected_next_rev,
-                                                                         cell.row,
-                                                                         current_rev
+                                                                                    prev_rev,
+                                                                                    expected_next_rev,
+                                                                                    cell.row,
+                                                                                    current_rev
                                     )
                                     pnr_warnings.append(error_msg)
                                     print error_msg
@@ -324,9 +324,19 @@ def extract_ps1_tab_part_nums(arguments, pnr_list=None, pnr_warnings=[]):
                     # If there's no new rev, there must be an ECO listed in the ECO column
                     elif not pn_sheet['C' + str(cell.row)].value:
                         if not cell.value:
-                            print 'ERROR: CI_Sheet cell C{x} has no value, so a value must be added to ' \
-                                  'empty cell E{x}!'.format(x=cell.row)
-                            sys.exit(1)
+                            if pnr_verify and pnr_list.has_part(current_pn, current_rev) and \
+                                    pnr_list.parts[current_pn].revs[current_rev].eco != str(cell.value):
+                                print 'ERROR: CI_Sheet row {} lists {}, which the PNR Log\n' \
+                                      '       lists as released on ECO {}. Cell E{} should contain ' \
+                                      "'{}'.".format(cell.row, current_pn_plus_rev,
+                                                     pnr_list.parts[current_pn].revs[current_rev].eco,
+                                                     cell.row,
+                                                     pnr_list.parts[current_pn].revs[current_rev].eco
+                                )
+                            else:
+                                print 'ERROR: CI_Sheet cell C{x} has no value, so a value must be added to ' \
+                                      'empty cell E{x}!'.format(x=cell.row)
+
                         elif not cell.value == "dup":
 
                             # if -p/--pnr-verify was set, verify old P/N's vs PN Reserve log
@@ -360,7 +370,7 @@ def extract_ps1_tab_part_nums(arguments, pnr_list=None, pnr_warnings=[]):
                                 # When a previously-released part/rev is listed more than once, all instances
                                 # should list the same ECO#
                                 if old_part_numbers[current_pn_plus_rev][current_rev] != cell.value:
-                                    print "ERROR: On CI_Sheet row {}, {} is marked as being released on \n       ECO {}. " \
+                                    print "ERROR: On CI_Sheet row {}, {} is marked as released on \n       ECO {}. " \
                                           "This conflicts with row {}, where it is marked as \n       released on " \
                                           "ECO {}.".format(cell.row,
                                                            current_pn_plus_rev,
@@ -374,7 +384,6 @@ def extract_ps1_tab_part_nums(arguments, pnr_list=None, pnr_warnings=[]):
 
                     # Keep track of part numbers already listed on the ECO
                     part_numbers_already_used[current_pn_plus_rev] = "{}".format(cell.row)
-
 
                 # "Description..." column
                 if cell.column == "F":
@@ -539,8 +548,8 @@ def main():
         eol = '\n'
 
     if pnr_warnings:
-        print 'WARNING: Issues found in PN Reserve Log validation phase.\n         See file PNR_WARNINGS ' \
-              'for details.\n'
+        print '\nWARNING: Additional issues found in PN Reserve Log validation phase.\n         ' \
+              'See file PNR_WARNINGS for details.\n'
         with io.open("PNR_WARNINGS", "w", newline=eol) as f:
             for warning in pnr_warnings:
                 f.write(warning + "\n")
