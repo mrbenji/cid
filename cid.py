@@ -1,4 +1,4 @@
-VERSION_STRING = "CID v1.12 - 12/15/2014"
+VERSION_STRING = "CID v1.14 - 12/16/2014"
 
 import argparse
 import sys
@@ -488,7 +488,7 @@ def make_parser():
     parser = argparse.ArgumentParser(description=description)
 
     # -v/--version, like -h/--help, ignores other arguments and prints requested info
-    parser.add_argument('-v', '--version', action='version', version=VERSION_STRING)
+    parser.add_argument('-v', '-V', '--version', action='version', version=VERSION_STRING)
 
     # this is a required argument unless -v or -h were used
     parser.add_argument("eco_file", type=str, help="eco form filename, w/ full path if not in current dir")
