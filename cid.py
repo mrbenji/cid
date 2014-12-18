@@ -1,4 +1,4 @@
-VERSION_STRING = "CID v1.14 - 12/16/2014"
+VERSION_STRING = "CID v1.18 - 12/17/2014"
 
 import argparse
 import sys
@@ -57,11 +57,11 @@ def split_sheet_rows_ps1(pn_sheet, pn_rows, media_to_skip, arguments):
                 new_rev = pn_sheet['C' + str(row_num)].value
 
                 if new_rev:
-                    current_media = "{}-{}".format(pn_sheet['A' + str(row_num)].value.strip(),
-                                                   pn_sheet['C' + str(row_num)].value)
+                    current_media = "{}-{}".format(str(pn_sheet['A' + str(row_num)].value).strip(),
+                                                   str(pn_sheet['C' + str(row_num)].value).strip())
                 elif curr_rev:
-                    current_media = "{}-{}".format(pn_sheet['A' + str(row_num)].value.strip(),
-                                                   pn_sheet['C' + str(row_num)].value)
+                    current_media = "{}-{}".format(str(pn_sheet['A' + str(row_num)].value.strip()),
+                                                   str(pn_sheet['C' + str(row_num)].value))
 
                 # if this is a media type we want a CONTENTS_ID for, crate an empty list for it in the media_sets dict
                 if not current_media_type in media_to_skip:
@@ -187,10 +187,10 @@ def extract_ps1_tab_part_nums(arguments, pnr_list=None, pnr_warnings=[]):
                 # Allowing lines like this screws everything up.
                 if not pn_sheet['A' + str(cell.row)].value:
                     if pn_sheet['B' + str(cell.row)].value:
-                        print "ERROR: P/N present in CI_Sheet cell B{x}, but A{x} is empty.".format(x=cell.row)
+                        print "ERROR: Rev present in CI_Sheet cell B{x}, but A{x} is empty.".format(x=cell.row)
                         sys.exit(1)
                     elif pn_sheet['G' + str(cell.row)].value:
-                        print "ERROR: P/N present in CI_Sheet cell G{x}, but A{x} is empty.".format(x=cell.row)
+                        print "ERROR: Media type present in CI_Sheet cell G{x}, but A{x} is empty.".format(x=cell.row)
                         sys.exit(1)
                     else:
                         continue
@@ -198,8 +198,8 @@ def extract_ps1_tab_part_nums(arguments, pnr_list=None, pnr_warnings=[]):
                 # "Affected Documentation" column
                 if cell.column == "A":
                     pn_table.append([])
-                    pn_table[-1].append(cell.value)
-                    current_pn = cell.value.strip()
+                    pn_table[-1].append(str(cell.value).strip())
+                    current_pn = str(cell.value).strip()
                     if not is_valid_part(current_pn):
                         print "ERROR: CI_Sheet cell A{} contains an improperly-formatted part number.".format(cell.row)
                         sys.exit(1)
@@ -209,20 +209,20 @@ def extract_ps1_tab_part_nums(arguments, pnr_list=None, pnr_warnings=[]):
                     if not cell.value:
                         print "ERROR: P/N present in CI_Sheet cell A{x}, but B{x} is empty.".format(x=cell.row)
                         sys.exit(1)
-                    if not is_valid_rev(cell.value):
+                    if not is_valid_rev(str(cell.value).strip()):
                         if arguments["invalid_revs"]:
-                            print "WARNING: CI_Sheet cell B{} contains invalid revision '{}'.".format(cell.row,
-                                                                                                      cell.value)
+                            print "WARNING: CI_Sheet cell B{} contains invalid " \
+                                  "revision '{}'.".format(cell.row, str(cell.value).strip())
                             print "         Script execution continuing because the -i argument was used."
                         else:
-                            print "ERROR: CI_Sheet cell B{} contains invalid revision '{}'.".format(cell.row,
-                                                                                                    cell.value)
+                            print "ERROR: CI_Sheet cell B{} contains invalid " \
+                                  "revision '{}'.".format(cell.row, str(cell.value).strip())
                             print "       If an exception was approved use the -i argument to override."
                             sys.exit(1)
 
                     # if there's not a new revision, this is the revision we're using
                     if not pn_sheet['C' + str(cell.row)].value:
-                        current_rev = cell.value
+                        current_rev = str(cell.value).strip()
                         current_pn_plus_rev = current_pn + " Rev. {}".format(current_rev)
 
                         # Replace p/n in last table "cell" with pn+revision
@@ -233,38 +233,38 @@ def extract_ps1_tab_part_nums(arguments, pnr_list=None, pnr_warnings=[]):
                         prev_rev = ""
 
                     else:
-                        prev_rev = cell.value
+                        prev_rev = str(cell.value).strip()
 
                 # "New Rev" column
                 if cell.column == "C" and cell.value:
-                    if not is_valid_rev(cell.value):
+                    if not is_valid_rev(str(cell.value).strip()):
                         if arguments["invalid_revs"]:
-                            print "WARNING: CI_Sheet cell C{} contains invalid revision '{}'.".format(cell.row,
-                                                                                                      cell.value)
+                            print "WARNING: CI_Sheet cell C{} contains invalid " \
+                                  "revision '{}'.".format(cell.row, str(cell.value).strip())
                             print "         Script execution continuing because the -i argument was used."
                         else:
-                            print "ERROR: CI_Sheet cell C{} contains invalid revision '{}'.".format(cell.row,
-                                                                                                    cell.value)
+                            print "ERROR: CI_Sheet cell C{} contains invalid " \
+                                  "revision '{}'.".format(cell.row, str(cell.value).strip())
                             print "       If an exception was approved use the -i argument to override."
                             sys.exit(1)
 
-                    if not (Rev(pn_sheet['B' + str(cell.row)].value).next_rev.name == cell.value) and is_valid_rev(
-                            cell.value):
+                    if not (Rev(pn_sheet['B' + str(cell.row)].value).next_rev.name == str(cell.value).strip()) \
+                            and is_valid_rev(str(cell.value).strip()):
                         print "WARNING: CI_Sheet cell C{} lists new rev '{}'.  Expected '{}', the first\n" \
                               "         valid rev after cur " \
                               "rev '{}' (cell B{}).".format(cell.row,
-                                                            cell.value,
+                                                            str(cell.value).strip(),
                                                             Rev(pn_sheet['B' + str(cell.row)].value).next_rev.name,
                                                             pn_sheet['B' + str(cell.row)].value,
                                                             cell.row
-                        )
+                                                            )
 
                     if pn_sheet['E' + str(cell.row)].value and str(pn_sheet['E' + str(cell.row)].value).isdigit():
                         print 'ERROR: CI_Sheet row {x} -- there cannot be both a new rev \n       ' \
                               'in C{x} and an ECO number in E{x}.'.format(x=cell.row)
                         sys.exit(1)
 
-                    current_rev = cell.value
+                    current_rev = str(cell.value).strip()
                     current_pn_plus_rev = current_pn + " Rev. {}".format(current_rev)
 
                     if pnr_verify:
@@ -299,7 +299,7 @@ def extract_ps1_tab_part_nums(arguments, pnr_list=None, pnr_warnings=[]):
                                                                                     expected_next_rev,
                                                                                     cell.row,
                                                                                     current_rev
-                                    )
+                                                                                    )
                                     pnr_warnings.append(error_msg)
                                     print error_msg
 
@@ -327,14 +327,14 @@ def extract_ps1_tab_part_nums(arguments, pnr_list=None, pnr_warnings=[]):
                     elif not pn_sheet['C' + str(cell.row)].value:
                         if not cell.value:
                             if pnr_verify and pnr_list.has_part(current_pn, current_rev) and \
-                                            pnr_list.parts[current_pn].revs[current_rev].eco != str(cell.value):
+                                    pnr_list.parts[current_pn].revs[current_rev].eco != str(cell.value).strip():
                                 print 'ERROR: CI_Sheet row {} lists {}, which the PNR Log\n' \
                                       '       lists as released on ECO {}. Cell E{} should contain ' \
                                       "'{}'.".format(cell.row, current_pn_plus_rev,
                                                      pnr_list.parts[current_pn].revs[current_rev].eco,
                                                      cell.row,
                                                      pnr_list.parts[current_pn].revs[current_rev].eco
-                                )
+                                                     )
                             else:
                                 print 'ERROR: CI_Sheet cell C{x} has no value, so a value must be added to ' \
                                       'empty cell E{x}!'.format(x=cell.row)
@@ -345,11 +345,11 @@ def extract_ps1_tab_part_nums(arguments, pnr_list=None, pnr_warnings=[]):
                             if pnr_verify:
                                 # Error if the ECO# listed for a released pn/rev doesn't match what's in the PNR Log
                                 if pnr_list.has_part(current_pn, current_rev):
-                                    if pnr_list.parts[current_pn].revs[current_rev].eco != str(cell.value):
+                                    if pnr_list.parts[current_pn].revs[current_rev].eco != str(cell.value).strip():
                                         print 'ERROR: On CI_Sheet row {}, {} is marked as being released on \n       ' \
                                               'ECO {}. This conflicts with the PN Reserve Log, where\n       ' \
                                               'it is marked as released ' \
-                                              'on ECO {}.'.format(cell.row, current_pn, cell.value,
+                                              'on ECO {}.'.format(cell.row, current_pn, str(cell.value).strip(),
                                                                   pnr_list.parts[current_pn].revs[current_rev].eco)
                                         sys.exit(1)
                                 else:
@@ -371,12 +371,12 @@ def extract_ps1_tab_part_nums(arguments, pnr_list=None, pnr_warnings=[]):
 
                                 # When a previously-released part/rev is listed more than once, all instances
                                 # should list the same ECO#
-                                if old_part_numbers[current_pn_plus_rev][current_rev] != cell.value:
+                                if old_part_numbers[current_pn_plus_rev][current_rev] != str(cell.value).strip():
                                     print "ERROR: On CI_Sheet row {}, {} is marked as released on \n       ECO {}. " \
                                           "This conflicts with row {}, where it is marked as \n       released on " \
                                           "ECO {}.".format(cell.row,
                                                            current_pn_plus_rev,
-                                                           cell.value,
+                                                           str(cell.value).strip(),
                                                            part_numbers_already_used[current_pn_plus_rev],
                                                            old_part_numbers[current_pn_plus_rev][current_rev])
                                     sys.exit(1)
@@ -408,12 +408,13 @@ def extract_ps1_tab_part_nums(arguments, pnr_list=None, pnr_warnings=[]):
                     # if the indention level was reduced, add blank line to improve legibility
                     if indent_reduced and current_indent_level == 0:
                         pn_table[-1][-1] = "\n" + pn_table[-1][-1]
+
                     pn_table[-1].append(cell.value)
 
                 # "Media" column
                 if cell.column == "G":
                     if cell.value:
-                        current_media = cell.value
+                        current_media = str(cell.value).strip()
                         if current_media.lower() in media_to_skip:
                             skip_media = True
                         else:
@@ -430,11 +431,10 @@ def extract_ps1_tab_part_nums(arguments, pnr_list=None, pnr_warnings=[]):
                 # "ISO Name" column
                 if cell.column == "H":
                     if cell.value:
-                        iso_name_len = len(cell.value.replace('.iso', ''))
+                        iso_name_len = len(str(cell.value).replace('.iso', '').strip())
                         if iso_name_len > 16:
-                            print 'WARNING: ISO name in CI_Sheet cell H{} is {} chars. Have you verified that\n' \
-                                  '         the volume name in the build instructions is ' \
-                                  '<= 16 chars?'.format(cell.row, iso_name_len)
+                            print 'WARNING: ISO name in CI_Sheet cell H{} is {} chars. Is vol name <= ' \
+                                  '16 chars?'.format(cell.row, iso_name_len)
 
     return cid_tables, cid_table_order, pnr_warnings
 
