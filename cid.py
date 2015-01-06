@@ -436,7 +436,7 @@ def extract_ps1_tab_part_nums(arguments, pnr_list=None, pnr_warnings=[]):
                             print 'WARNING: ISO name in CI_Sheet cell H{} is {} chars. Is vol name <= ' \
                                   '16 chars?'.format(cell.row, iso_name_len)
 
-    return cid_tables, cid_table_order, pnr_warnings
+    return cid_tables, cid_table_order, pnr_warnings, missing_from_pnr_warnings_issued
 
 
 def write_single_cid_file(contents_id_table, eol):
@@ -541,7 +541,8 @@ def main():
         pnr_list, pnr_warnings = pnr.extract_part_nums_pnr()
 
     # Extract ECO spreadsheet PNs in CONTENTS_ID format (returns a dict of multi-line strings, keyed to media type)
-    cid_tables, cid_table_order, pnr_warnings = extract_ps1_tab_part_nums(arguments, pnr_list, pnr_warnings)
+    cid_tables, cid_table_order, pnr_warnings, missing_from_pnr_warnings_issued = \
+        extract_ps1_tab_part_nums(arguments, pnr_list, pnr_warnings)
 
     # Set file output line endings to requested format.  One (and only one) will always be True.  Default is UNIX.
     if arguments["e"] == "dos":
@@ -552,6 +553,9 @@ def main():
     if pnr_warnings:
         print '\nWARNING: Additional issues found in PN Reserve Log validation phase.\n         ' \
               'See file PNR_WARNINGS for details.\n'
+        if missing_from_pnr_warnings_issued:
+            print 'WARNING: Your ECO contains CIs that need to be added to the PN Reserve Log.\n         ' \
+                  'See file PNR_WARNINGS for details.\n'
         with io.open("PNR_WARNINGS", "w", newline=eol) as f:
             for warning in pnr_warnings:
                 f.write(warning + "\n")
