@@ -58,9 +58,9 @@ def extract_part_nums_pnr():
 
             except ValueError:
                 if not is_valid_part(part_num):
-                    pnr_warnings.append(u"PNR WARNING: Skipping PNR Log row {} -- illegal part number.".format(row_num))
+                    pnr_warnings.append("PNR WARNING: Skipping PNR Log row {} -- illegal part number.".format(row_num))
                 if not is_valid_rev(part_rev):
-                    pnr_warnings.append(u"PNR WARNING: Skipping PNR Log row {} -- illegal revision {}.".format(row_num,
+                    pnr_warnings.append("PNR WARNING: Skipping PNR Log row {} -- illegal revision {}.".format(row_num,
                                                                                                            part_rev))
 
     return pnr_list, pnr_warnings

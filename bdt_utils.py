@@ -46,11 +46,11 @@ def pretty_table(data, padding=2):
         col_num = 0
         for col in row:
 
-            # sub unicode "pretty quotes" for straight ascii ones
-            col = col.replace(u'\u2018', u'\u0027')
-            col = col.replace(u'\u2019', u'\u0027')
-            col = col.replace(u'\u201C', u'\u0022')
-            col = col.replace(u'\u201D', u'\u0022')
+            # # sub unicode "pretty quotes" for straight ascii ones
+            # col = col.replace(u'\u2018', u'\u0027')
+            # col = col.replace(u'\u2019', u'\u0027')
+            # col = col.replace(u'\u201C', u'\u0022')
+            # col = col.replace(u'\u201D', u'\u0022')
 
             cr_compensate = col.count('\n')
             return_string += col.ljust(max_col_widths[col_num]+padding+cr_compensate)
