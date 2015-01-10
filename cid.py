@@ -1,4 +1,6 @@
-VERSION_STRING = "CID v1.18 - 12/17/2014"
+from __future__ import unicode_literals
+
+VERSION_STRING = "CID v1.20 01/07/2015"
 
 import argparse
 import sys
@@ -283,8 +285,8 @@ def extract_ps1_tab_part_nums(arguments, pnr_list=None, pnr_warnings=[]):
                         else:
                             # Report if a new pn/rev combo is not in the PNR Log (report only once per pn/rev)
                             if current_pn_plus_rev not in missing_from_pnr_warnings_issued:
-                                pnr_warnings.append(u"WARNING: CI_Sheet row {} - part {} needs to be "
-                                                    u"added to PN Reserve Log.".format(cell.row,
+                                pnr_warnings.append("WARNING: CI_Sheet row {} - part {} needs to be "
+                                                    "added to PN Reserve Log.".format(cell.row,
                                                                                        current_pn_plus_rev))
                                 missing_from_pnr_warnings_issued.append(current_pn_plus_rev)
 
@@ -292,9 +294,9 @@ def extract_ps1_tab_part_nums(arguments, pnr_list=None, pnr_warnings=[]):
                             if pnr_list.has_part(current_pn, prev_rev):
                                 expected_next_rev = pnr_list.parts[current_pn].revs[prev_rev].next_rev.name
                                 if (expected_next_rev != current_rev) and is_valid_rev(current_rev):
-                                    error_msg = u"WARNING: PN Reserve Log lists the prev rev for {} as '{}'.\n" \
-                                                u"         Expected new rev '{}' in CI_Sheet " \
-                                                u"cell C{}, instead of'{}'.".format(current_pn,
+                                    error_msg = "WARNING: PN Reserve Log lists the prev rev for {} as '{}'.\n" \
+                                                "         Expected new rev '{}' in CI_Sheet " \
+                                                "cell C{}, instead of'{}'.".format(current_pn,
                                                                                     prev_rev,
                                                                                     expected_next_rev,
                                                                                     cell.row,
@@ -355,7 +357,7 @@ def extract_ps1_tab_part_nums(arguments, pnr_list=None, pnr_warnings=[]):
                                 else:
                                     # Report if an old pn/rev combo is not in the PNR Log (report only once per pn/rev)
                                     if current_pn_plus_rev not in missing_from_pnr_warnings_issued:
-                                        pnr_warnings.append(u"INFO: CI_Sheet row {} - released part {} not "
+                                        pnr_warnings.append("INFO: CI_Sheet row {} - released part {} not "
                                                             "in the PNR Log.".format(cell.row, current_pn_plus_rev))
                                         missing_from_pnr_warnings_issued.append(current_pn_plus_rev)
 
@@ -559,15 +561,15 @@ def main():
     if arguments["new_pn_only"]:
         print "Creating file NEW_PARTS, containing only new, unique parts...",
         with io.open("NEW_PARTS", "w", newline=eol) as f:
-            f.write(u"NOTE: This file lists only the new, unique parts on this ECO. Duplicate and previously-released\n"
-                    u"parts are not included.  Nesting is preserved (ex. 065s are indented under the first 139 they\n"
-                    u"are affiliated with).  Be aware that you may not be seeing all members of a 139/142/etc., since\n"
-                    u"previously-released parts, or parts already displayed under earlier 139s/etc., "
-                    u"will be missing.\n\n")
+            f.write("NOTE: This file lists only the new, unique parts on this ECO. Duplicate and previously-released\n"
+                    "parts are not included.  Nesting is preserved (ex. 065s are indented under the first 139 they\n"
+                    "are affiliated with).  Be aware that you may not be seeing all members of a 139/142/etc., since\n"
+                    "previously-released parts, or parts already displayed under earlier 139s/etc., "
+                    "will be missing.\n\n")
             for table in cid_table_order:
                 if cid_tables[table]:
                     f.write(bdt_utils.pretty_table(cid_tables[table], 3))
-                    f.write(u"\n\n")
+                    f.write("\n\n")
     else:
         # Combine all CONTENTS_IDs into one document.  Can be combined with -m and/or -s.
         if arguments["print_to_one"]:
@@ -575,7 +577,7 @@ def main():
             with io.open("CONTENTS_ID.all", "w", newline=eol) as f:
                 for table in cid_table_order:
                     f.write(bdt_utils.pretty_table(cid_tables[table], 3))
-                    f.write(u"\n\n")
+                    f.write("\n\n")
 
         # if only -o was set, don't print to many.
         if not arguments["print_to_one"] and not arguments["print_to_many"]:
