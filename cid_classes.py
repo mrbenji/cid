@@ -57,7 +57,7 @@ def is_valid_rev(rev_text, mode=1):
 @total_ordering
 class Rev(object):
     def __init__(self, name, eco=None):
-        self.name = str(name)
+        self.name = str(name).strip()
         self.eco = str(eco)
 
         # mode 2 checks that revs contain only chars in VALID_REV_CHARS, allowing this
@@ -66,8 +66,8 @@ class Rev(object):
         # revs contain only chars NOT in INVALID_REV_CHARS, because that list isn't
         # affected by the -i/--invalid-rev argument, i.e. Rev creation would fail on an
         # invalid rev even if that argument were set.
-        if not is_valid_rev(name, mode=2):
-            raise ValueError(str(name).strip() + " is not a valid rev!")
+        if not is_valid_rev(self.name, mode=2):
+            raise ValueError(self.name + " is not a valid rev!")
 
     def __eq__(self, other):
         return self.name == other.name

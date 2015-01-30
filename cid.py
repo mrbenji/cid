@@ -1,6 +1,6 @@
 from __future__ import unicode_literals
 
-VERSION_STRING = "CID v1.22 01/09/2015"
+VERSION_STRING = "CID v1.24 01/30/2015"
 
 import argparse
 import sys
@@ -30,8 +30,6 @@ PN_SHEET_COLS = 'ABCDEFG'
 
 def form_rev_switches(cover_sheet):
 
-    #
-
     global ECO_COL
     global DES_COL
     global MT_COL
@@ -43,7 +41,7 @@ def form_rev_switches(cover_sheet):
     else:
         form_rev = Rev(cover_sheet['A44'].value)
 
-    if form_rev == Rev('B1'):
+    if form_rev == Rev('B1') or form_rev > Rev('B2'):
         ECO_COL = 'E'
         DES_COL = 'F'
         MT_COL = 'G'
@@ -327,8 +325,8 @@ def extract_ps1_tab_part_nums(arguments, pnr_list=None, pnr_warnings=[]):
                         else:
                             # Report if a new pn/rev combo is not in the PNR Log (report only once per pn/rev)
                             if current_pn_plus_rev not in missing_from_pnr_warnings_issued:
-                                pnr_warnings.append("WARNING: CI_Sheet row {} - part {} needs to be "
-                                                    "added to PN Reserve Log.".format(cell.row,
+                                pnr_warnings.append("WARNING: CI_Sheet row {} - Add part {}"
+                                                    " to the PN Reserve Log.".format(cell.row,
                                                                                        current_pn_plus_rev))
                                 missing_from_pnr_warnings_issued.append(current_pn_plus_rev)
 
