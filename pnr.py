@@ -38,6 +38,7 @@ def extract_part_nums_pnr():
 
     row_num = 0
     pnr_list = ListOfParts()
+    pnr_dupe_pn_list = []
     pnr_warnings = []
 
     if not pn_sheet['A1'].value:
@@ -53,6 +54,11 @@ def extract_part_nums_pnr():
 
         if part_num and part_rev and eco_num:
 
+            if pnr_list.has_part(part_num, part_rev):
+                dupe_pn = "{} Rev. {}".format(part_num, part_rev)
+                pnr_warnings.append("PNR WARNING: Duplicate CI {} in PNR Log row {}.".format(dupe_pn, row_num))
+                pnr_dupe_pn_list.append(dupe_pn)
+
             try:
                 pnr_list.add_part(part_num, part_rev, eco_num)
 
@@ -63,4 +69,4 @@ def extract_part_nums_pnr():
                     pnr_warnings.append("PNR WARNING: Skipping PNR Log row {} -- illegal revision {}.".format(row_num,
                                                                                                            part_rev))
 
-    return pnr_list, pnr_warnings
+    return pnr_list, pnr_warnings, pnr_dupe_pn_list

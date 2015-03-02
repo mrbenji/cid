@@ -1,6 +1,6 @@
 from __future__ import unicode_literals
 
-VERSION_STRING = "CID v1.24 01/30/2015"
+VERSION_STRING = "CID v1.26 03/02/2015"
 
 import argparse
 import sys
@@ -68,6 +68,7 @@ def split_sheet_rows_ps1(pn_sheet, pn_rows, media_to_skip, arguments):
     part_number_count = 0
     new_part_number_count = 0
     media_sets = {}
+    media_sets["skipped"] = []
     media_set_order = []
 
     # split PN rows into per-media-type lists
@@ -101,6 +102,8 @@ def split_sheet_rows_ps1(pn_sheet, pn_rows, media_to_skip, arguments):
                 if not current_media_type in media_to_skip:
                     media_sets[current_media] = []
                     media_set_order.append(current_media)
+                else:
+                    media_set_order.append("skipped")
 
             # if -n/--new-pn-only is set, we need to verify the part is new before adding this row.
             if pn_sheet[NR_COL + str(row_num)].value and not pn_sheet[ECO_COL + str(row_num)].value and current_media:
@@ -113,6 +116,8 @@ def split_sheet_rows_ps1(pn_sheet, pn_rows, media_to_skip, arguments):
             # if not on skipped media, add the row to the appropriate list in the media_sets dict
             if current_media and not current_media_type in media_to_skip:
                 media_sets[current_media].append(row)
+            else:
+                media_sets["skipped"].append(row)
 
     print "\n{} total configuration items. {} CIs " \
           "were changed.\n".format(part_number_count, new_part_number_count)
@@ -120,7 +125,7 @@ def split_sheet_rows_ps1(pn_sheet, pn_rows, media_to_skip, arguments):
     return media_sets, media_set_order
 
 
-def extract_ps1_tab_part_nums(arguments, pnr_list=None, pnr_warnings=[]):
+def extract_ps1_tab_part_nums(arguments, pnr_list=None, pnr_warnings=[], pnr_dupe_pn_list=[]):
     """
     Open ECO spreadsheet, extract part numbers from the PS1 tab
 
@@ -207,7 +212,8 @@ def extract_ps1_tab_part_nums(arguments, pnr_list=None, pnr_warnings=[]):
     for set_name in media_set_order:
         current_indent_level = 0
         cid_tables[set_name] = []
-        cid_table_order.append(set_name)
+        if not set_name == "skipped":
+            cid_table_order.append(set_name)
 
         # pn_table is a reference to cid_tables[set_name], not a copy,
         # so updates to it will be reflected in the original dict
@@ -239,6 +245,7 @@ def extract_ps1_tab_part_nums(arguments, pnr_list=None, pnr_warnings=[]):
                     pn_table.append([])
                     pn_table[-1].append(str(cell.value).strip())
                     current_pn = str(cell.value).strip()
+
                     if not is_valid_part(current_pn):
                         print "ERROR: CI_Sheet cell {}{} contains an improperly-formatted part number.".format(
                             AD_COL, cell.row)
@@ -303,13 +310,19 @@ def extract_ps1_tab_part_nums(arguments, pnr_list=None, pnr_warnings=[]):
 
                     if pn_sheet[ECO_COL + str(cell.row)].value and str(pn_sheet[ECO_COL + str(cell.row)].value).isdigit():
                         print 'ERROR: CI_Sheet row {} -- there cannot be both a new rev \n       ' \
-                              'in {}{} and an ECO number in {}{}.'.format(NR_COL, cell.row, ECO_COL, cell.row)
+                              'in {}{} and an ECO number in {}{}.'.format(cell.row, NR_COL, cell.row, ECO_COL, cell.row)
                         sys.exit(1)
 
                     current_rev = str(cell.value).strip()
+
                     current_pn_plus_rev = current_pn + " Rev. {}".format(current_rev)
 
                     if pnr_verify:
+
+                        if current_pn_plus_rev in pnr_dupe_pn_list:
+                            print "ERROR: CI_Sheet cell {}{} contains CI {}, which is\n       in the PN Reserve " \
+                                  "Log more than once.".format(AD_COL, cell.row, current_pn_plus_rev)
+                            sys.exit(1)
 
                         # For new parts, error if pn in PNRL and ECO# listed is not the current ECO.
                         if pnr_list.has_part(current_pn, current_rev):
@@ -584,12 +597,13 @@ def main():
 
     pnr_list = None
     pnr_warnings = []
+    pnr_dupe_pn_list = []
     if arguments["pnr_verify"]:
-        pnr_list, pnr_warnings = pnr.extract_part_nums_pnr()
+        pnr_list, pnr_warnings, pnr_dupe_pn_list = pnr.extract_part_nums_pnr()
 
     # Extract ECO spreadsheet PNs in CONTENTS_ID format (returns a dict of multi-line strings, keyed to media type)
     cid_tables, cid_table_order, pnr_warnings, missing_from_pnr_warnings_issued = \
-        extract_ps1_tab_part_nums(arguments, pnr_list, pnr_warnings)
+        extract_ps1_tab_part_nums(arguments, pnr_list, pnr_warnings, pnr_dupe_pn_list)
 
     # Set file output line endings to requested format.  One (and only one) will always be True.  Default is UNIX.
     if arguments["e"] == "dos":
