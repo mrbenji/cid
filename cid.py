@@ -1,6 +1,6 @@
 from __future__ import unicode_literals
 
-VERSION_STRING = "CID v1.26 03/02/2015"
+VERSION_STRING = "CID v1.27 03/02/2015"
 
 import argparse
 import sys
@@ -83,6 +83,10 @@ def split_sheet_rows_ps1(pn_sheet, pn_rows, media_to_skip, arguments):
                 print "\nERROR: CI_Sheet cell {}5 - First P/N must have a value in media column.".format(MT_COL)
                 sys.exit(1)
             current_media_col = pn_sheet[MT_COL + str(row_num)].value
+
+            # if this row contains a note, we ignore it completely
+            if str(current_media_col).strip().lower() in ("note", "notes"):
+                continue
 
             if pn_sheet[AD_COL + str(row_num)].value:
                 part_number_count += 1
