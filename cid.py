@@ -70,6 +70,8 @@ def split_sheet_rows_ps1(pn_sheet, pn_rows, media_to_skip, arguments):
     media_sets = {}
     media_sets["skipped"] = []
     media_set_order = []
+    skip_media_set_appended = False
+
 
     # split PN rows into per-media-type lists
     for row in pn_rows:
@@ -103,7 +105,9 @@ def split_sheet_rows_ps1(pn_sheet, pn_rows, media_to_skip, arguments):
                     media_sets[current_media] = []
                     media_set_order.append(current_media)
                 else:
-                    media_set_order.append("skipped")
+                    if not skip_media_set_appended:
+                        media_set_order.append("skipped")
+                        skip_media_set_appended = True
 
             # if -n/--new-pn-only is set, we need to verify the part is new before adding this row.
             if pn_sheet[NR_COL + str(row_num)].value and not pn_sheet[ECO_COL + str(row_num)].value and current_media:
@@ -320,8 +324,8 @@ def extract_ps1_tab_part_nums(arguments, pnr_list=None, pnr_warnings=[], pnr_dup
                     if pnr_verify:
 
                         if current_pn_plus_rev in pnr_dupe_pn_list:
-                            print "ERROR: CI_Sheet cell {}{} contains CI {}, which is\n       in the PN Reserve " \
-                                  "Log more than once.".format(AD_COL, cell.row, current_pn_plus_rev)
+                            print "ERROR: CI_Sheet cell {}{} contains CI {}, which is\n       in the PN Reserve Log " \
+                                  "more than once. See file PNR_WARNINGS.".format(AD_COL, cell.row, current_pn_plus_rev)
                             sys.exit(1)
 
                         # For new parts, error if pn in PNRL and ECO# listed is not the current ECO.
