@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 import openpyxl           # third party open source library, https://openpyxl.readthedocs.org/en/latest/
 import sys
 
@@ -23,8 +25,8 @@ def extract_part_nums_pnr():
         # openpyxl is a library for reading/writing Excel files.
         pnr_log = openpyxl.load_workbook(PNRL_PATH)
     except openpyxl.exceptions.InvalidFileException:
-        print '\nPNR ERROR: Could not open Part Number Reserve Log at path:' \
-              '\n       {}'.format(PNRL_PATH)
+        print('\nPNR ERROR: Could not open Part Number Reserve Log at path:' \
+              '\n       {}'.format(PNRL_PATH))
         sys.exit(1)
 
     # part number reserve workbook must have a sheet called "PN_Rev"
@@ -32,8 +34,8 @@ def extract_part_nums_pnr():
     try:
         pn_rows = pn_sheet.rows
     except AttributeError:
-        print '\nPNR ERROR: No PN_Rev tab on Part Number Reserve Log at path:' \
-              '\n\n     {}'.format(PNRL_PATH)
+        print('\nPNR ERROR: No PN_Rev tab on Part Number Reserve Log at path:' \
+              '\n\n     {}'.format(PNRL_PATH))
         sys.exit(1)
 
     row_num = 0
@@ -42,8 +44,8 @@ def extract_part_nums_pnr():
     pnr_warnings = []
 
     if not pn_sheet['A1'].value:
-        print "\nPNR ERROR: PNR Log does not appear to be valid!" \
-              "Cell A1 of {} is blank.".format(PNRL_PATH)
+        print("\nPNR ERROR: PNR Log does not appear to be valid!" \
+              "Cell A1 of {} is blank.".format(PNRL_PATH))
         sys.exit(1)
 
     for row in pn_rows:

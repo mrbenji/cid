@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 def pretty_money(amount):
     """
     Return integer or float as US-currency-formatted string.

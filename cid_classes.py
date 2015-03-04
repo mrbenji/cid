@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 from functools import total_ordering
 import string
 import re
@@ -26,7 +28,7 @@ def is_valid_rev(rev_text, mode=1):
         rev_text = str(rev_text)
 
     # valid revs must be non-zero-length strings
-    if not (isinstance(rev_text, str) or isinstance(rev_text, unicode)) or not len(rev_text):
+    if not (isinstance(rev_text, str) or isinstance(rev_text, str)) or not len(rev_text):
         return False
 
     # we start by assuming there are no digits in this rev
@@ -132,7 +134,7 @@ PN_RE = re.compile(r'^\d\d\d\-\d\d\d\d\d\d-\d\d$')
 
 
 def is_valid_part(pn_text):
-    if not (isinstance(pn_text, str) or isinstance(pn_text, unicode)):
+    if not (isinstance(pn_text, str) or isinstance(pn_text, str)):
         return False
 
     if not PN_RE.match(pn_text):
@@ -179,13 +181,13 @@ class ListOfParts(object):
             self.parts = parts
 
     def add_part(self, pn, rev, eco=None):
-        if not pn in self.parts.keys():
+        if not pn in list(self.parts.keys()):
             self.parts[pn] = Part(pn)
 
         return self.parts[pn].add_rev(rev, eco)
 
     def has_part(self, pn, rev):
-        if not pn in self.parts.keys():
+        if not pn in list(self.parts.keys()):
             return False
 
         return self.parts[pn].has_rev(rev)

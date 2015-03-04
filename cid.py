@@ -1,6 +1,6 @@
-from __future__ import unicode_literals
+#!/usr/bin/env python3
 
-VERSION_STRING = "CID v1.28 03/03/2015"
+VERSION_STRING = "CID v1.30 03/04/2015"
 
 import argparse
 import sys
@@ -80,7 +80,7 @@ def split_sheet_rows_ps1(pn_sheet, pn_rows, media_to_skip, arguments):
         # skip header section
         if row_num > 4:
             if row_num == 5 and not pn_sheet[MT_COL + '5'].value:
-                print "\nERROR: CI_Sheet cell {}5 - First P/N must have a value in media column.".format(MT_COL)
+                print("\nERROR: CI_Sheet cell {}5 - First P/N must have a value in media column.".format(MT_COL))
                 sys.exit(1)
             current_media_col = pn_sheet[MT_COL + str(row_num)].value
 
@@ -127,8 +127,8 @@ def split_sheet_rows_ps1(pn_sheet, pn_rows, media_to_skip, arguments):
             else:
                 media_sets["skipped"].append(row)
 
-    print "\n{} total configuration items. {} CIs " \
-          "were changed.\n".format(part_number_count, new_part_number_count)
+    print("\n{} total configuration items. {} CIs " \
+          "were changed.\n".format(part_number_count, new_part_number_count))
 
     return media_sets, media_set_order
 
@@ -161,8 +161,8 @@ def extract_ps1_tab_part_nums(arguments, pnr_list=None, pnr_warnings=[], pnr_dup
         eco_form = openpyxl.load_workbook(arguments["eco_file"])
 
     except openpyxl.exceptions.InvalidFileException:
-        print '\nERROR: Could not open ECO form at path:\n' \
-              '       {}\n\n       Is path correct?'.format(arguments["eco_file"])
+        print('\nERROR: Could not open ECO form at path:\n' \
+              '       {}\n\n       Is path correct?'.format(arguments["eco_file"]))
         sys.exit(1)
 
     # ECO form workbook must have a sheet named "CoverSheet"
@@ -179,8 +179,8 @@ def extract_ps1_tab_part_nums(arguments, pnr_list=None, pnr_warnings=[], pnr_dup
             cover_rows = cover_sheet.rows
 
         except AttributeError:
-            print '\nERROR: No "CoverSheet" or "NewCoverSheet" tab in ECO form at path:\n' \
-                  '       {}'.format(arguments["eco_file"])
+            print('\nERROR: No "CoverSheet" or "NewCoverSheet" tab in ECO form at path:\n' \
+                  '       {}'.format(arguments["eco_file"]))
             sys.exit(1)
 
     # Determine version of form being used, adjust constants, etc. accordingly
@@ -199,8 +199,8 @@ def extract_ps1_tab_part_nums(arguments, pnr_list=None, pnr_warnings=[], pnr_dup
             pn_rows = pn_sheet.rows
 
         except AttributeError:
-            print '\nERROR: No "CI_Sheet" or "PS1" tab in ECO form at path:\n' \
-                  '       {}'.format(arguments["eco_file"])
+            print('\nERROR: No "CI_Sheet" or "PS1" tab in ECO form at path:\n' \
+                  '       {}'.format(arguments["eco_file"]))
             sys.exit(1)
 
     # convert pn_sheet.rows into a dict of row object lists, keyed by media keyword
@@ -238,12 +238,12 @@ def extract_ps1_tab_part_nums(arguments, pnr_list=None, pnr_warnings=[], pnr_dup
                 # the Cur Rev or Media Type columns.  Allowing lines like this screws everything up.
                 if not pn_sheet[AD_COL + str(cell.row)].value:
                     if pn_sheet[CR_COL + str(cell.row)].value:
-                        print "ERROR: Rev present in CI_Sheet cell {}{}, but {}{} is empty.".format(
-                            CR_COL, cell.row, AD_COL, cell.row)
+                        print("ERROR: Rev present in CI_Sheet cell {}{}, but {}{} is empty.".format(
+                            CR_COL, cell.row, AD_COL, cell.row))
                         sys.exit(1)
                     elif pn_sheet[MT_COL + str(cell.row)].value:
-                        print "ERROR: Media type present in CI_Sheet cell {}{}, but {}{} is empty.".format(
-                            MT_COL, cell.row, AD_COL, cell.row)
+                        print("ERROR: Media type present in CI_Sheet cell {}{}, but {}{} is empty.".format(
+                            MT_COL, cell.row, AD_COL, cell.row))
                         sys.exit(1)
                     else:
                         continue
@@ -255,25 +255,25 @@ def extract_ps1_tab_part_nums(arguments, pnr_list=None, pnr_warnings=[], pnr_dup
                     current_pn = str(cell.value).strip()
 
                     if not is_valid_part(current_pn):
-                        print "ERROR: CI_Sheet cell {}{} contains an improperly-formatted part number.".format(
-                            AD_COL, cell.row)
+                        print("ERROR: CI_Sheet cell {}{} contains an improperly-formatted part number.".format(
+                            AD_COL, cell.row))
                         sys.exit(1)
 
                 # "Cur Rev" column
                 if cell.column == CR_COL:
                     if not cell.value:
-                        print "ERROR: P/N present in CI_Sheet cell A{}, but B{} is empty.".format(
-                            AD_COL, cell.row, CR_COL, cell.row)
+                        print("ERROR: P/N present in CI_Sheet cell A{}, but B{} is empty.".format(
+                            AD_COL, cell.row, CR_COL, cell.row))
                         sys.exit(1)
                     if not is_valid_rev(str(cell.value).strip()):
                         if arguments["invalid_revs"]:
-                            print "WARNING: CI_Sheet cell {}{} contains invalid " \
-                                  "revision '{}'.".format(CR_COL, cell.row, str(cell.value).strip())
-                            print "         Script execution continuing because the -i argument was used."
+                            print("WARNING: CI_Sheet cell {}{} contains invalid " \
+                                  "revision '{}'.".format(CR_COL, cell.row, str(cell.value).strip()))
+                            print("         Script execution continuing because the -i argument was used.")
                         else:
-                            print "ERROR: CI_Sheet cell {}{} contains invalid " \
-                                  "revision '{}'.".format(CR_COL, cell.row, str(cell.value).strip())
-                            print "       If an exception was approved use the -i argument to override."
+                            print("ERROR: CI_Sheet cell {}{} contains invalid " \
+                                  "revision '{}'.".format(CR_COL, cell.row, str(cell.value).strip()))
+                            print("       If an exception was approved use the -i argument to override.")
                             sys.exit(1)
 
                     # if there's not a new revision, this is the revision we're using
@@ -295,18 +295,18 @@ def extract_ps1_tab_part_nums(arguments, pnr_list=None, pnr_warnings=[], pnr_dup
                 if cell.column == NR_COL and cell.value:
                     if not is_valid_rev(str(cell.value).strip()):
                         if arguments["invalid_revs"]:
-                            print "WARNING: CI_Sheet cell {}{} contains invalid " \
-                                  "revision '{}'.".format(NR_COL, cell.row, str(cell.value).strip())
-                            print "         Script execution continuing because the -i argument was used."
+                            print("WARNING: CI_Sheet cell {}{} contains invalid " \
+                                  "revision '{}'.".format(NR_COL, cell.row, str(cell.value).strip()))
+                            print("         Script execution continuing because the -i argument was used.")
                         else:
-                            print "ERROR: CI_Sheet cell {}{} contains invalid " \
-                                  "revision '{}'.".format(NR_COL, cell.row, str(cell.value).strip())
-                            print "       If an exception was approved use the -i argument to override."
+                            print("ERROR: CI_Sheet cell {}{} contains invalid " \
+                                  "revision '{}'.".format(NR_COL, cell.row, str(cell.value).strip()))
+                            print("       If an exception was approved use the -i argument to override.")
                             sys.exit(1)
 
                     if not (Rev(pn_sheet[CR_COL + str(cell.row)].value).next_rev.name == str(cell.value).strip()) \
                             and is_valid_rev(str(cell.value).strip()):
-                        print "WARNING: CI_Sheet cell {}{} lists new rev '{}'.  Expected '{}', the first\n" \
+                        print("WARNING: CI_Sheet cell {}{} lists new rev '{}'.  Expected '{}', the first\n" \
                               "         valid rev after cur " \
                               "rev '{}' (cell {}{}).".format(NR_COL, cell.row,
                                                              str(cell.value).strip(),
@@ -314,11 +314,11 @@ def extract_ps1_tab_part_nums(arguments, pnr_list=None, pnr_warnings=[], pnr_dup
                                                              pn_sheet[CR_COL + str(cell.row)].value,
                                                              CR_COL,
                                                              cell.row
-                                                             )
+                                                             ))
 
                     if pn_sheet[ECO_COL + str(cell.row)].value and str(pn_sheet[ECO_COL + str(cell.row)].value).isdigit():
-                        print 'ERROR: CI_Sheet row {} -- there cannot be both a new rev \n       ' \
-                              'in {}{} and an ECO number in {}{}.'.format(cell.row, NR_COL, cell.row, ECO_COL, cell.row)
+                        print('ERROR: CI_Sheet row {} -- there cannot be both a new rev \n       ' \
+                              'in {}{} and an ECO number in {}{}.'.format(cell.row, NR_COL, cell.row, ECO_COL, cell.row))
                         sys.exit(1)
 
                     current_rev = str(cell.value).strip()
@@ -328,19 +328,19 @@ def extract_ps1_tab_part_nums(arguments, pnr_list=None, pnr_warnings=[], pnr_dup
                     if pnr_verify:
 
                         if current_pn_plus_rev in pnr_dupe_pn_list:
-                            print "ERROR: CI_Sheet cell {}{} contains CI {}, which is\n       in the PN Reserve Log " \
-                                  "more than once. See file PNR_WARNINGS.".format(AD_COL, cell.row, current_pn_plus_rev)
+                            print("ERROR: CI_Sheet cell {}{} contains CI {}, which is\n       in the PN Reserve Log " \
+                                  "more than once. See file PNR_WARNINGS.".format(AD_COL, cell.row, current_pn_plus_rev))
                             sys.exit(1)
 
                         # For new parts, error if pn in PNRL and ECO# listed is not the current ECO.
                         if pnr_list.has_part(current_pn, current_rev):
                             if pnr_list.parts[current_pn].revs[current_rev].eco != str(cover_sheet['S2'].value):
-                                print "ERROR: CI_Sheet row {} -- new pn {} is marked in the\n       PN Reserve " \
+                                print("ERROR: CI_Sheet row {} -- new pn {} is marked in the\n       PN Reserve " \
                                       "Log as released on ECO {}, not " \
                                       "current ECO {}.".format(cell.row,
                                                                current_pn_plus_rev,
                                                                pnr_list.parts[current_pn].revs[current_rev].eco,
-                                                               str(cover_sheet['S2'].value))
+                                                               str(cover_sheet['S2'].value)))
                                 sys.exit(1)
 
                         else:
@@ -356,9 +356,9 @@ def extract_ps1_tab_part_nums(arguments, pnr_list=None, pnr_warnings=[], pnr_dup
                                 expected_next_rev = pnr_list.parts[current_pn].revs[prev_rev].next_rev.name
                                 if (expected_next_rev != current_rev) and is_valid_rev(current_rev):
 
-                                    error_msg = u"WARNING: PN Reserve Log lists the prev rev for {} as '{}'.\n" \
-                                                u"         Expected new rev '{}' in CI_Sheet " \
-                                                u"cell {}{}, instead of'{}'.".format(current_pn,
+                                    error_msg = "WARNING: PN Reserve Log lists the prev rev for {} as '{}'.\n" \
+                                                "         Expected new rev '{}' in CI_Sheet " \
+                                                "cell {}{}, instead of'{}'.".format(current_pn,
                                                                                      prev_rev,
                                                                                      expected_next_rev,
                                                                                      NR_COL,
@@ -367,7 +367,7 @@ def extract_ps1_tab_part_nums(arguments, pnr_list=None, pnr_warnings=[], pnr_dup
                                                                                      )
 
                                     pnr_warnings.append(error_msg)
-                                    print error_msg
+                                    print(error_msg)
 
                     # Replace p/n in last table "cell" with pn+revision
                     pn_table[-1][-1] = current_pn_plus_rev
@@ -377,34 +377,34 @@ def extract_ps1_tab_part_nums(arguments, pnr_list=None, pnr_warnings=[], pnr_dup
 
                     # once a new p/n has been listed, subsequent occurrences must be marked
                     # "dup" in the "ECO" column.  Is this a dup not marked "dup?"
-                    if current_pn_plus_rev in part_numbers_already_used.keys() and not cell.value == "dup" \
+                    if current_pn_plus_rev in list(part_numbers_already_used.keys()) and not cell.value == "dup" \
                             and pn_sheet[NR_COL + str(cell.row)].value:
-                        print 'WARNING: CI_Sheet row {} has duplicate P/N {}\n         which is not marked "dup." ' \
+                        print('WARNING: CI_Sheet row {} has duplicate P/N {}\n         which is not marked "dup." ' \
                               'Last used on row {}.'.format(cell.row, current_pn_plus_rev,
-                                                            part_numbers_already_used[current_pn_plus_rev])
+                                                            part_numbers_already_used[current_pn_plus_rev]))
 
                     # Next: is this a p/n marked "dup" that isn't actually a dup?
-                    elif current_pn_plus_rev not in part_numbers_already_used.keys() and cell.value == "dup" \
+                    elif current_pn_plus_rev not in list(part_numbers_already_used.keys()) and cell.value == "dup" \
                             and pn_sheet[NR_COL + str(cell.row)].value:
-                        print 'WARNING: CI_Sheet row {} has new P/N {}, incorrectly\n         marked ' \
-                              'as "dup"'.format(cell.row, current_pn_plus_rev)
+                        print('WARNING: CI_Sheet row {} has new P/N {}, incorrectly\n         marked ' \
+                              'as "dup"'.format(cell.row, current_pn_plus_rev))
 
                     # If there's no new rev, there must be an ECO listed in the ECO column
                     elif not pn_sheet[NR_COL + str(cell.row)].value:
                         if not cell.value:
                             if pnr_verify and pnr_list.has_part(current_pn, current_rev) and \
                                     pnr_list.parts[current_pn].revs[current_rev].eco != str(cell.value).strip():
-                                print 'ERROR: CI_Sheet row {} lists {}, which the PNR Log\n' \
+                                print('ERROR: CI_Sheet row {} lists {}, which the PNR Log\n' \
                                       '       lists as released on ECO {}. Cell {}{} should contain ' \
                                       "'{}'.".format(cell.row, current_pn_plus_rev,
                                                      pnr_list.parts[current_pn].revs[current_rev].eco,
                                                      ECO_COL,
                                                      cell.row,
                                                      pnr_list.parts[current_pn].revs[current_rev].eco
-                                                     )
+                                                     ))
                             else:
-                                print 'ERROR: CI_Sheet cell {}{} has no value, so a value must be added to ' \
-                                      'empty cell {}{}!'.format(NR_COL, cell.row, ECO_COL, cell.row)
+                                print('ERROR: CI_Sheet cell {}{} has no value, so a value must be added to ' \
+                                      'empty cell {}{}!'.format(NR_COL, cell.row, ECO_COL, cell.row))
 
                         elif not cell.value == "dup":
 
@@ -413,17 +413,17 @@ def extract_ps1_tab_part_nums(arguments, pnr_list=None, pnr_warnings=[], pnr_dup
                                 # Error if the ECO# listed for a released pn/rev doesn't match what's in the PNR Log
                                 if pnr_list.has_part(current_pn, current_rev):
                                     if pnr_list.parts[current_pn].revs[current_rev].eco != str(cell.value).strip():
-                                        print 'ERROR: On CI_Sheet row {}, {} is marked as being released on \n       ' \
+                                        print('ERROR: On CI_Sheet row {}, {} is marked as being released on \n       ' \
                                               'ECO {}. This conflicts with the PN Reserve Log, where\n       ' \
                                               'it is marked as released ' \
                                               'on ECO {}.'.format(cell.row, current_pn, str(cell.value).strip(),
-                                                                  pnr_list.parts[current_pn].revs[current_rev].eco)
+                                                                  pnr_list.parts[current_pn].revs[current_rev].eco))
                                         sys.exit(1)
                                 else:
                                     # Report if an old pn/rev combo is not in the PNR Log (report only once per pn/rev)
                                     if current_pn_plus_rev not in missing_from_pnr_warnings_issued:
-                                        pnr_warnings.append(u"INFO: CI_Sheet row {} - released part {} not "
-                                                            u"in the PNR Log.".format(cell.row, current_pn_plus_rev))
+                                        pnr_warnings.append("INFO: CI_Sheet row {} - released part {} not "
+                                                            "in the PNR Log.".format(cell.row, current_pn_plus_rev))
                                         missing_from_pnr_warnings_issued.append(current_pn_plus_rev)
 
                             # The following block of validation tests keeps track of the ECO numbers recorded
@@ -439,13 +439,13 @@ def extract_ps1_tab_part_nums(arguments, pnr_list=None, pnr_warnings=[], pnr_dup
                                 # When a previously-released part/rev is listed more than once, all instances
                                 # should list the same ECO#
                                 if old_part_numbers[current_pn_plus_rev][current_rev] != str(cell.value).strip():
-                                    print "ERROR: On CI_Sheet row {}, {} is marked as released on \n       ECO {}. " \
+                                    print("ERROR: On CI_Sheet row {}, {} is marked as released on \n       ECO {}. " \
                                           "This conflicts with row {}, where it is marked as \n       released on " \
                                           "ECO {}.".format(cell.row,
                                                            current_pn_plus_rev,
                                                            str(cell.value).strip(),
                                                            part_numbers_already_used[current_pn_plus_rev],
-                                                           old_part_numbers[current_pn_plus_rev][current_rev])
+                                                           old_part_numbers[current_pn_plus_rev][current_rev]))
                                     sys.exit(1)
 
                             # store the ECO# listed for the pn/rev on this row
@@ -457,8 +457,8 @@ def extract_ps1_tab_part_nums(arguments, pnr_list=None, pnr_warnings=[], pnr_dup
                 # "Description..." column
                 if cell.column == DES_COL:
                     if not cell.value:
-                        print "ERROR: P/N present in CI_Sheet cell {}{}, but {}{} is empty.".format(
-                            AD_COL, cell.row, DES_COL, cell.row)
+                        print("ERROR: P/N present in CI_Sheet cell {}{}, but {}{} is empty.".format(
+                            AD_COL, cell.row, DES_COL, cell.row))
                         sys.exit(1)
                     new_indent_level = cell.style.alignment.indent
 
@@ -501,8 +501,8 @@ def extract_ps1_tab_part_nums(arguments, pnr_list=None, pnr_warnings=[], pnr_dup
                     if cell.value:
                         iso_name_len = len(str(cell.value).replace('.iso', '').strip())
                         if iso_name_len > 16:
-                            print 'WARNING: ISO name in CI_Sheet cell {}{} is {} chars. Is vol name <= ' \
-                                  '16 chars?'.format(IN_COL, cell.row, iso_name_len)
+                            print('WARNING: ISO name in CI_Sheet cell {}{} is {} chars. Is vol name <= ' \
+                                  '16 chars?'.format(IN_COL, cell.row, iso_name_len))
 
     return cid_tables, cid_table_order, pnr_warnings, missing_from_pnr_warnings_issued
 
@@ -529,7 +529,7 @@ def write_single_cid_file(contents_id_table, eol):
             # that should be used to name the file, but not be written to the file.
             if not stripped_line[0:3].isdigit():
                 current_media = stripped_line[stripped_line.find(":") + 1:]
-                print "Creating file CONTENTS_ID.{}...".format(current_media.replace(" ", "_"))
+                print("Creating file CONTENTS_ID.{}...".format(current_media.replace(" ", "_")))
                 output_file = io.open("CONTENTS_ID." + current_media.replace(" ", "_"), "w", newline=eol)
                 continue
 
@@ -537,9 +537,9 @@ def write_single_cid_file(contents_id_table, eol):
             # write line to file, passes along blank lines, too
             output_file.write(line + "\n")
         except NameError:
-            print "\nERROR: write_single_cid_file() was passed an empty or improperly-formatted table." \
+            print("\nERROR: write_single_cid_file() was passed an empty or improperly-formatted table." \
                   "Table contents:\n{}\nstripped_line:" \
-                  "\n{}".format(str(contents_id_table), stripped_line)
+                  "\n{}".format(str(contents_id_table), stripped_line))
             sys.exit(1)
 
     if not output_file.closed:
@@ -620,17 +620,17 @@ def main():
         eol = '\n'
 
     if pnr_warnings:
-        print '\nWARNING: Additional issues found in PN Reserve Log validation phase.\n         ' \
-              'See file PNR_WARNINGS for details.\n'
+        print('\nWARNING: Additional issues found in PN Reserve Log validation phase.\n         ' \
+              'See file PNR_WARNINGS for details.\n')
         if missing_from_pnr_warnings_issued:
-            print 'WARNING: Your ECO contains CIs that need to be added to the PN Reserve Log.\n         ' \
-                  'See file PNR_WARNINGS for details.\n'
+            print('WARNING: Your ECO contains CIs that need to be added to the PN Reserve Log.\n         ' \
+                  'See file PNR_WARNINGS for details.\n')
         with io.open("PNR_WARNINGS", "w", newline=eol) as f:
             for warning in pnr_warnings:
                 f.write(warning + "\n")
 
     if arguments["new_pn_only"]:
-        print "Creating file NEW_PARTS, containing only new, unique parts...",
+        print("Creating file NEW_PARTS, containing only new, unique parts...", end=' ')
         with io.open("NEW_PARTS", "w", newline=eol) as f:
             f.write("NOTE: This file lists only the new, unique parts on this ECO. Duplicate and previously-released\n"
                     "parts are not included.  Nesting is preserved (ex. 065s are indented under the first 139 they\n"
@@ -644,7 +644,7 @@ def main():
     else:
         # Combine all CONTENTS_IDs into one document.  Can be combined with -m and/or -s.
         if arguments["print_to_one"]:
-            print "Creating file CONTENTS_ID.all...\n",
+            print("Creating file CONTENTS_ID.all...\n", end=' ')
             with io.open("CONTENTS_ID.all", "w", newline=eol) as f:
                 for table in cid_table_order:
                     f.write(bdt_utils.pretty_table(cid_tables[table], 3))

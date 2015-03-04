@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 import unittest
 
 from cid_classes import *
@@ -30,12 +32,12 @@ class CidClassesTest(unittest.TestCase):
         self.assertTrue(Rev("B2") != Rev("B"))
 
     def test_invalid_revs(self):
-        print 'Verifying that revs are being properly flagged as invalid...'
+        print('Verifying that revs are being properly flagged as invalid...')
         for bad_rev in ["I", "AZ", "1B1", "-A", "1C"]:
-            print " {}".format(bad_rev),
+            print(" {}".format(bad_rev), end=' ')
             with self.assertRaises(ValueError):
                 Rev(bad_rev)
-        print "\n"
+        print("\n")
 
     def test_next_rev(self):
         self.assertEqual(Rev("A").next_rev, Rev("B"))
