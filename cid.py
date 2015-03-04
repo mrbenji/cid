@@ -1,6 +1,6 @@
 from __future__ import unicode_literals
 
-VERSION_STRING = "CID v1.27 03/02/2015"
+VERSION_STRING = "CID v1.28 03/03/2015"
 
 import argparse
 import sys
