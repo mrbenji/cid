@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-VERSION_STRING = "CID v1.30 03/04/2015"
+VERSION_STRING = "CID v1.31 03/04/2015"
 
 import argparse
 import sys
@@ -160,7 +160,7 @@ def extract_ps1_tab_part_nums(arguments, pnr_list=None, pnr_warnings=[], pnr_dup
         # openpyxl is a library for reading/writing Excel files.
         eco_form = openpyxl.load_workbook(arguments["eco_file"])
 
-    except openpyxl.exceptions.InvalidFileException:
+    except openpyxl.utils.exceptions.InvalidFileException:
         print('\nERROR: Could not open ECO form at path:\n' \
               '       {}\n\n       Is path correct?'.format(arguments["eco_file"]))
         sys.exit(1)
@@ -460,7 +460,7 @@ def extract_ps1_tab_part_nums(arguments, pnr_list=None, pnr_warnings=[], pnr_dup
                         print("ERROR: P/N present in CI_Sheet cell {}{}, but {}{} is empty.".format(
                             AD_COL, cell.row, DES_COL, cell.row))
                         sys.exit(1)
-                    new_indent_level = cell.style.alignment.indent
+                    new_indent_level = cell.alignment.indent
 
                     # this will only happen on the first line
                     if not current_indent_level:

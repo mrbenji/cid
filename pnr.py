@@ -24,7 +24,7 @@ def extract_part_nums_pnr():
     try:
         # openpyxl is a library for reading/writing Excel files.
         pnr_log = openpyxl.load_workbook(PNRL_PATH)
-    except openpyxl.exceptions.InvalidFileException:
+    except openpyxl.utils.exceptions.InvalidFileException:
         print('\nPNR ERROR: Could not open Part Number Reserve Log at path:' \
               '\n       {}'.format(PNRL_PATH))
         sys.exit(1)
