@@ -25,7 +25,7 @@ def is_valid_rev(rev_text, mode=1):
     """
 
     # Numeric revisions are legal for redline releases, but must be converted to string.
-    if isinstance(rev_text, six.string_types):
+    if isinstance(rev_text, int):
         rev_text = str(rev_text)
 
     # "six" is a module that allows for generic tests, in this case we're testing for a "string-like object"
