@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
 
 from functools import total_ordering
-import string
+from unidecode import unidecode
 import re
+import six
 
 # The chars in VALID_REV_CHARS are all the valid options for positions in the rev
 # IMPORTANT:  if the "-i" flag is used, VALID_REV_CHARS is overwritten with val of VALID_AND_INVALID_REV_CHARS
@@ -24,11 +25,12 @@ def is_valid_rev(rev_text, mode=1):
     """
 
     # Numeric revisions are legal for redline releases, but must be converted to string.
-    if isinstance(rev_text, int):
+    if isinstance(rev_text, six.string_types):
         rev_text = str(rev_text)
 
-    # valid revs must be non-zero-length strings
-    if not (isinstance(rev_text, str) or isinstance(rev_text, str)) or not len(rev_text):
+    # "six" is a module that allows for generic tests, in this case we're testing for a "string-like object"
+    # valid revs must be non-zero-length "string-like objects" (string, char, unicode)
+    if not (isinstance(rev_text, six.string_types) or isinstance(rev_text, six.string_types)) or not len(rev_text):
         return False
 
     # we start by assuming there are no digits in this rev
@@ -39,7 +41,7 @@ def is_valid_rev(rev_text, mode=1):
         if char in INVALID_REV_CHARS and mode == 1:
             return False
 
-        if not char in VALID_REV_CHARS and mode == 2:
+        if char not in VALID_REV_CHARS and mode == 2:
             return False
 
         # the dash character is only valid if it's the only character in the rev
@@ -130,14 +132,16 @@ class Rev(object):
 
 
 # a compiled regular expression for the RAST part number format
-PN_RE = re.compile(r'^\d\d\d\-\d\d\d\d\d\d-\d\d$')
+PN_RE = re.compile(r'^\d\d\d\-\d\d\d\d\d\d\-\d\d$')
 
 
 def is_valid_part(pn_text):
-    if not (isinstance(pn_text, str) or isinstance(pn_text, str)):
+    # "six" is a module that allows for generic tests, in this case we're testing for a "string-like object"
+    # valid PNs must be non-zero-length "string-like objects" (string, char, unicode)
+    if not (isinstance(pn_text, six.string_types) or isinstance(pn_text, six.string_types) or not len(pn_text)):
         return False
 
-    if not PN_RE.match(pn_text):
+    if not PN_RE.match(unidecode(pn_text)):
         return False
 
     return True

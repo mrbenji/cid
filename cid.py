@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-VERSION_STRING = "CID v1.31 03/04/2015"
+VERSION_STRING = "CID v1.32 03/05/2015"
 
 import argparse
 import sys
@@ -10,6 +10,7 @@ from cid_classes import *  # custom object defs & helper functions for this scri
 import cid_classes  # re-import to allow alternate means of access to constants in this module
 import bdt_utils  # Benji's bag-o'-utility-functions
 import pnr
+from unidecode import unidecode
 
 # HAS_NO_MEDIA is a list of "media" tags used for P/Ns that are not put on any official media.  By default
 # they are skipped during CONTENTS_ID output. Media tags are converted to lowercase, with spaces converted
@@ -254,7 +255,10 @@ def extract_ps1_tab_part_nums(arguments, pnr_list=None, pnr_warnings=[], pnr_dup
                     pn_table[-1].append(str(cell.value).strip())
                     current_pn = str(cell.value).strip()
 
-                    if not is_valid_part(current_pn):
+                    if str(current_pn) == "040-129594-00":
+                        pass
+
+                    if not is_valid_part(str(current_pn)):
                         print("ERROR: CI_Sheet cell {}{} contains an improperly-formatted part number.".format(
                             AD_COL, cell.row))
                         sys.exit(1)
@@ -522,6 +526,8 @@ def write_single_cid_file(contents_id_table, eol):
 
         # only do the following block on non-blank lines
         if line:
+            line = unidecode(line)
+
             # create a version of line with leading & trailing spaces removed
             stripped_line = line.strip()
 
@@ -627,7 +633,7 @@ def main():
                   'See file PNR_WARNINGS for details.\n')
         with io.open("PNR_WARNINGS", "w", newline=eol) as f:
             for warning in pnr_warnings:
-                f.write(warning + "\n")
+                f.write(unidecode(warning) + "\n")
 
     if arguments["new_pn_only"]:
         print("Creating file NEW_PARTS, containing only new, unique parts...", end=' ')
@@ -639,7 +645,7 @@ def main():
                     "will be missing.\n\n")
             for table in cid_table_order:
                 if cid_tables[table]:
-                    f.write(bdt_utils.pretty_table(cid_tables[table], 3))
+                    f.write(unidecode(bdt_utils.pretty_table(cid_tables[table], 3)))
                     f.write("\n\n")
     else:
         # Combine all CONTENTS_IDs into one document.  Can be combined with -m and/or -s.
@@ -647,7 +653,7 @@ def main():
             print("Creating file CONTENTS_ID.all...\n", end=' ')
             with io.open("CONTENTS_ID.all", "w", newline=eol) as f:
                 for table in cid_table_order:
-                    f.write(bdt_utils.pretty_table(cid_tables[table], 3))
+                    f.write(unidecode(bdt_utils.pretty_table(cid_tables[table], 3)))
                     f.write("\n\n")
 
         # if only -o was set, don't print to many.
