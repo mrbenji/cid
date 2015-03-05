@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-VERSION_STRING = "CID v1.32 03/05/2015"
+VERSION_STRING = "CID v1.33 03/05/2015"
 
 import argparse
 import sys
