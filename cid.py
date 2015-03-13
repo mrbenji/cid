@@ -649,11 +649,14 @@ def main():
     if arguments["invalid_revs"]:
         cid_classes.VALID_REV_CHARS = VALID_AND_INVALID_REV_CHARS
 
+    print("")
+
     pnr_list = None
     pnr_warnings = []
     pnr_dupe_pn_list = []
     if arguments["pnr_verify"]:
         if network_is_present():
+            print("Parsing PN Reserve Log...")
             pnr_list, pnr_warnings, pnr_dupe_pn_list = pnr.extract_part_nums_pnr()
         else:
             print("\nWARNING: You don't seem to be on the US domain, skipping \n"
@@ -661,6 +664,7 @@ def main():
             arguments["pnr_verify"] = False
 
     # Extract ECO spreadsheet PNs in CONTENTS_ID format (returns a dict of multi-line strings, keyed to media type)
+    print("Parsing ECO form {}...".format(arguments["eco_file"]))
     cid_tables, cid_table_order, pnr_warnings, missing_from_pnr_warnings_issued = \
         extract_ps1_tab_part_nums(arguments, pnr_list, pnr_warnings, pnr_dupe_pn_list)
 
