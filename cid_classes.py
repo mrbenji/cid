@@ -185,13 +185,13 @@ class ListOfParts(object):
             self.parts = parts
 
     def add_part(self, pn, rev, eco=None):
-        if not pn in list(self.parts.keys()):
+        if pn not in list(self.parts.keys()):
             self.parts[pn] = Part(pn)
 
         return self.parts[pn].add_rev(rev, eco)
 
     def has_part(self, pn, rev):
-        if not pn in list(self.parts.keys()):
+        if pn not in list(self.parts.keys()):
             return False
 
         return self.parts[pn].has_rev(rev)
@@ -200,8 +200,7 @@ class ListOfParts(object):
         if not is_valid_part(pn):
             return None
 
-        if not pn in self.parts:
+        if pn not in self.parts:
             return Rev("-")
 
         return self.parts[pn].max_rev.next_rev
-

@@ -4,6 +4,7 @@ import unittest
 
 from cid_classes import *
 
+
 class CidClassesTest(unittest.TestCase):
 
     def test_alphabetic_revs(self):
@@ -111,7 +112,7 @@ class CidClassesTest(unittest.TestCase):
         # if the part/rev combo was truly added, has_part(pn, rev) should return True
         self.assertTrue(my_list.has_part("123-456789-01", "A"))
 
-    def test_next_rev(self):
+    def test_next_part(self):
         my_list = ListOfParts()
 
         my_list.add_part("987-654321-01", "A")

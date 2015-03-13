@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-VERSION_STRING = "CID v1.38 03/12/2015"
+VERSION_STRING = "CID v1.40 03/12/2015"
 
 import argparse
 import sys
@@ -69,7 +69,7 @@ def form_rev_switches(cover_sheet):
 
     if form_rev > NEWEST_FORM_REV:
         print("\nWARNING: You are using an newer rev of the ECO form ({}) than the\n"
-              "         CID tool supports. The the CID tool needs to be updated.".format(form_rev.name))
+              "         CID tool supports. The CID tool needs to be updated.".format(form_rev.name))
         input("\nPress Enter to attempt processing anyway, or Ctrl-C to abort.")
 
 
@@ -367,7 +367,7 @@ def extract_ps1_tab_part_nums(arguments, pnr_list=None, pnr_warnings=[], pnr_dup
                     if pnr_verify:
 
                         if current_pn_plus_rev in pnr_dupe_pn_list:
-                            print("ERROR: CI_Sheet cell {}{} contains CI {}, which is\n       in the PN Reserve Log "
+                            print("ERROR: CI_Sheet cell {}{} contains PN {}, which is\n       in the PN Reserve Log "
                                   "more than once. See file PNR_WARNINGS.\n".format(AD_COL, cell.row,
                                                                                     current_pn_plus_rev))
                             ERRORS_FOUND = True
