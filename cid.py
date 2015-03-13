@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
 
-VERSION_STRING = "CID v1.40 03/12/2015"
+VERSION_STRING = "CID v1.43 03/13/2015"
 
 import argparse
 import sys
+import os
 import io
 import openpyxl  # third party open source library, https://openpyxl.readthedocs.org/en/latest/
 from cid_classes import *  # custom object defs & helper functions for this script
@@ -24,6 +25,10 @@ HAS_NO_MEDIA = ["scif", "hard_copy", "hardcopy", "synergy"]
 # This constant holds an IP address known to be accessible from the US domain, used to verify we have an
 # active US domain network connection before trying to access network resources.
 US_DOMAIN_IP = "http://138.126.103.197"
+
+DASH_P_NOT_DEFAULT = ["ast1941", "ast1353"]
+MOBILE_USERS = ["ast1382"]
+RDC_MACHINE_RE = re.compile(r'(APPSIG-)?TRM(\d+)?$')
 
 # Keep track of whether errors have been found, so if there are errors we can skip warnings and CID generation
 ERRORS_FOUND = False
@@ -103,7 +108,7 @@ def split_sheet_rows_ps1(pn_sheet, cover_sheet, pn_rows, media_to_skip, argument
         if row_num > 4:
             if row_num == 5 and not pn_sheet[MT_COL + '5'].value:
                 print("\nERROR: CI_Sheet cell {}5 - First P/N must have a value in media column.".format(MT_COL))
-                exit_app(arguments)
+                exit_app()
             current_media_col = pn_sheet[MT_COL + str(row_num)].value
 
             # if this row contains a note, we ignore it completely
@@ -156,11 +161,11 @@ def split_sheet_rows_ps1(pn_sheet, cover_sheet, pn_rows, media_to_skip, argument
 
     if form_rev > Rev('B2'):
         if not config_items_released:
-            print('\nWARNING: No value entered for "configuration items released."\n'
+            print('WARNING: No value entered for "configuration items released."\n'
                   '         Cover Sheet cell C16 should be set to {}.'.format(new_part_number_count))
         else:
             if not config_items_released == new_part_number_count:
-                print('\nWARNING: Wrong value of {} entered for "configuration items released."\n'
+                print('WARNING: Wrong value of {} entered for "configuration items released."\n'
                       '         Cover Sheet cell C16 should be set to {}.'.format(config_items_released,
                                                                                   new_part_number_count))
 
@@ -197,7 +202,7 @@ def extract_ps1_tab_part_nums(arguments, pnr_list=None, pnr_warnings=[], pnr_dup
     except openpyxl.utils.exceptions.InvalidFileException:
         print('\nERROR: Could not open ECO form at path:\n'
               '       {}\n\n       Is path correct?'.format(arguments["eco_file"]))
-        exit_app(arguments)
+        exit_app()
 
     # ECO form workbook must have a sheet named "CoverSheet"
     try:
@@ -212,7 +217,7 @@ def extract_ps1_tab_part_nums(arguments, pnr_list=None, pnr_warnings=[], pnr_dup
         except KeyError:
             print('\nERROR: No "CoverSheet" or "NewCoverSheet" tab in ECO form at path:\n'
                   '       {}'.format(arguments["eco_file"]))
-            exit_app(arguments)
+            exit_app()
 
     # Determine version of form being used, adjust constants, etc. accordingly
     form_rev_switches(cover_sheet)
@@ -231,7 +236,7 @@ def extract_ps1_tab_part_nums(arguments, pnr_list=None, pnr_warnings=[], pnr_dup
         except KeyError:
             print('\nERROR: No "CI_Sheet" or "PS1" tab in ECO form at path:\n'
                   '       {}'.format(arguments["eco_file"]))
-            exit_app(arguments)
+            exit_app()
 
     # convert pn_sheet.rows into a dict of row object lists, keyed by media keyword
     media_sets, media_set_order = split_sheet_rows_ps1(pn_sheet, cover_sheet, pn_rows, media_to_skip, arguments)
@@ -622,7 +627,7 @@ def make_parser():
     special_meg = special_group.add_mutually_exclusive_group()
     special_meg.add_argument('-n', '--new-pn-only', action='store_true', default=False,
                              help="print only new part numbers, to file NEW_PARTS")
-    special_meg.add_argument('-p', '--pnr-verify', action='store_true', default=False,
+    special_meg.add_argument('-p', '--pnr-verify', action='store_true', default=True,
                              help="verify ECO PNs vs. Part Number Reserve Log")
 
     # Writing to xlsm files doesn't currently work, and even writing to xlsx breaks formatting
@@ -639,6 +644,8 @@ def main():
 
     global ERRORS_FOUND
 
+    print("")
+
     # "plumbing" for argparse, a standard argument parsing library
     parser = make_parser()
     arguments = parser.parse_args(sys.argv[1:])
@@ -649,22 +656,35 @@ def main():
     if arguments["invalid_revs"]:
         cid_classes.VALID_REV_CHARS = VALID_AND_INVALID_REV_CHARS
 
-    print("")
-
     pnr_list = None
     pnr_warnings = []
     pnr_dupe_pn_list = []
-    if arguments["pnr_verify"]:
-        if network_is_present():
-            print("Parsing PN Reserve Log...")
-            pnr_list, pnr_warnings, pnr_dupe_pn_list = pnr.extract_part_nums_pnr()
-        else:
-            print("\nWARNING: You don't seem to be on the US domain, skipping \n"
-                  "         PN Reserve Log verification.")
+
+    if (os.environ['USERNAME'].lower() in DASH_P_NOT_DEFAULT) and (len(sys.argv) == 2):
+        if not RDC_MACHINE_RE.match(os.environ['COMPUTERNAME']):
+            print('PN Reserve log not verified by default for {}, '
+                  'use "-p" to force.\n'.format(os.environ['USERNAME'].upper()))
             arguments["pnr_verify"] = False
+        else:
+            print('RDC system detected, PN Reserve log verified by default.')
+
+    if arguments["pnr_verify"]:
+        if os.environ['USERNAME'].lower() in MOBILE_USERS:
+            print("Mobile user detected, US domain detected? ".format(os.environ['USERNAME'].upper()), end=" ")
+            if network_is_present():
+                print("Yes.\nParsing PN Reserve Log...", end=" ")
+            else:
+                print("No.\n\nWARNING: You don't seem to be on the US domain, skipping \n"
+                      "         PN Reserve Log verification.\n")
+                arguments["pnr_verify"] = False
+        else:
+            print("Parsing PN Reserve Log...")
+
+    if arguments["pnr_verify"]:
+        pnr_list, pnr_warnings, pnr_dupe_pn_list = pnr.extract_part_nums_pnr()
 
     # Extract ECO spreadsheet PNs in CONTENTS_ID format (returns a dict of multi-line strings, keyed to media type)
-    print("Parsing ECO form {}...".format(arguments["eco_file"]))
+    print("Parsing ECO form...")
     cid_tables, cid_table_order, pnr_warnings, missing_from_pnr_warnings_issued = \
         extract_ps1_tab_part_nums(arguments, pnr_list, pnr_warnings, pnr_dupe_pn_list)
 
@@ -676,7 +696,7 @@ def main():
 
     if ERRORS_FOUND:
         print("\nErrors found... skipping warnings and CONTENTS_ID creation until resolved.")
-        exit_app(arguments)
+        exit_app()
 
     if pnr_warnings:
         print('\nWARNING: Additional issues found in PN Reserve Log validation phase.\n         '
@@ -718,14 +738,14 @@ def main():
                 # write_single_cid_file outputs everything after the media type line to a CONTENTS_ID.<media type> file.
                 write_single_cid_file(bdt_utils.pretty_table(cid_tables[table], 3), eol)
 
-    exit_app(arguments, 0)
+    exit_app(0)
 
 
 def network_is_present():
     try:
-        # req = urllib.request.Request("http0.0.0.0")
-        req = urllib.request.Request(US_DOMAIN_IP)
-        response = urllib.request.urlopen(req)
+        req = urllib.request.Request("http://0.0.0")
+        # req = urllib.request.Request(US_DOMAIN_IP)
+        urllib.request.urlopen(req, timeout=1)
 
     except urllib.error.URLError:
         return False
@@ -733,9 +753,8 @@ def network_is_present():
     return True
 
 
-def exit_app(arguments, exit_code=1):
-    if not (arguments['all_parts'] or arguments['invalid_revs'] or arguments['new_pn_only'] or
-            arguments['pnr_verify'] or arguments['print_to_one']):
+def exit_app(exit_code=1):
+    if len(sys.argv) == 2:
         input("\nPress Enter to continue...")
 
     sys.exit(exit_code)
