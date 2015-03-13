@@ -1,6 +1,7 @@
 # cid output files
 CONTENTS_ID.*
 NEW_PARTS
+PNR_WARNINGS
 
 # Excel workbooks
 *.xlsx
