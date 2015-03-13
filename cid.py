@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-VERSION_STRING = "CID v1.43 03/13/2015"
+VERSION_STRING = "CID v1.44 03/13/2015"
 
 import argparse
 import sys
@@ -26,9 +26,14 @@ HAS_NO_MEDIA = ["scif", "hard_copy", "hardcopy", "synergy"]
 # active US domain network connection before trying to access network resources.
 US_DOMAIN_IP = "http://138.126.103.197"
 
-DASH_P_NOT_DEFAULT = ["ast1941", "ast1353"]
+# These 3 constants control customized behavior. The first lists users for whom -p should not be the
+# default mode.  The 2nd lists mobile users for whom the network connection should be tested before
+# attempts are made to access the PNR log over the network the 3rd is pattern that matches the names
+# of IT-controlled remote access machines like APPSIG-TRM3 or SVO-TRM2 -- using one of these machines
+# will restore the -p as a default mode for users in the DASH_P_NOT_DEFAULT group.
+DASH_P_NOT_DEFAULT = ["ast1941"]
 MOBILE_USERS = ["ast1382"]
-RDC_MACHINE_RE = re.compile(r'(APPSIG-)?TRM(\d+)?$')
+RDC_MACHINE_RE = re.compile(r'TRM(\d+)?$')
 
 # Keep track of whether errors have been found, so if there are errors we can skip warnings and CID generation
 ERRORS_FOUND = False
@@ -373,7 +378,7 @@ def extract_ps1_tab_part_nums(arguments, pnr_list=None, pnr_warnings=[], pnr_dup
 
                         if current_pn_plus_rev in pnr_dupe_pn_list:
                             print("ERROR: CI_Sheet cell {}{} contains PN {}, which is\n       in the PN Reserve Log "
-                                  "more than once. See file PNR_WARNINGS.\n".format(AD_COL, cell.row,
+                                  "more than once.\n".format(AD_COL, cell.row,
                                                                                     current_pn_plus_rev))
                             ERRORS_FOUND = True
 
@@ -469,7 +474,7 @@ def extract_ps1_tab_part_nums(arguments, pnr_list=None, pnr_warnings=[], pnr_dup
                                 else:
                                     # Report if an old pn/rev combo is not in the PNR Log (report only once per pn/rev)
                                     if current_pn_plus_rev not in missing_from_pnr_warnings_issued:
-                                        pnr_warnings.append("INFO: CI_Sheet row {} - released part {} not "
+                                        pnr_warnings.append("WARNING: CI_Sheet row {} - released part {} not "
                                                             "in the PNR Log.".format(cell.row, current_pn_plus_rev))
                                         missing_from_pnr_warnings_issued.append(current_pn_plus_rev)
 
@@ -660,15 +665,20 @@ def main():
     pnr_warnings = []
     pnr_dupe_pn_list = []
 
-    if (os.environ['USERNAME'].lower() in DASH_P_NOT_DEFAULT) and (len(sys.argv) == 2):
+    # Set app behavior in default mode. sys.argv will have two elements if the  script was
+    # called with no extra flags... if you don't want -p set by default for a user, add
+    # their RAST username to the constant DASH_P_NOT_DEFAULT
+    if (len(sys.argv) == 2) and (os.environ['USERNAME'].lower() in DASH_P_NOT_DEFAULT):
+        # If user is using Remote Desktop Connection to connect to a TRM terminal, -p should be default.
         if not RDC_MACHINE_RE.match(os.environ['COMPUTERNAME']):
             print('PN Reserve log not verified by default for {}, '
                   'use "-p" to force.\n'.format(os.environ['USERNAME'].upper()))
             arguments["pnr_verify"] = False
         else:
-            print('RDC system detected, PN Reserve log verified by default.')
+            print('TRM remote terminal detected, PN Reserve log verified by default.')
 
     if arguments["pnr_verify"]:
+        # Adding laptop users' usernames to MOBILE_USERS will force a network check before allowing PNR verification
         if os.environ['USERNAME'].lower() in MOBILE_USERS:
             print("Mobile user detected, US domain detected? ".format(os.environ['USERNAME'].upper()), end=" ")
             if network_is_present():
@@ -677,14 +687,15 @@ def main():
                 print("No.\n\nWARNING: You don't seem to be on the US domain, skipping \n"
                       "         PN Reserve Log verification.\n")
                 arguments["pnr_verify"] = False
-        else:
-            print("Parsing PN Reserve Log...")
+    else:
+        print("Parsing PN Reserve Log...", end=" ")
 
+    # if the pnr_verify arg is still set, go ahead and parse the PNR log.
     if arguments["pnr_verify"]:
         pnr_list, pnr_warnings, pnr_dupe_pn_list = pnr.extract_part_nums_pnr()
 
-    # Extract ECO spreadsheet PNs in CONTENTS_ID format (returns a dict of multi-line strings, keyed to media type)
     print("Parsing ECO form...")
+    # Extract ECO spreadsheet PNs in CONTENTS_ID format (returns a dict of multi-line strings, keyed to media type)
     cid_tables, cid_table_order, pnr_warnings, missing_from_pnr_warnings_issued = \
         extract_ps1_tab_part_nums(arguments, pnr_list, pnr_warnings, pnr_dupe_pn_list)
 
@@ -699,8 +710,8 @@ def main():
         exit_app()
 
     if pnr_warnings:
-        print('\nWARNING: Additional issues found in PN Reserve Log validation phase.\n         '
-              'See file PNR_WARNINGS for details.\n')
+        # print('\nWARNING: Additional issues found in PN Reserve Log validation phase.\n         '
+        #       'See file PNR_WARNINGS for details.\n')
         if missing_from_pnr_warnings_issued:
             print('WARNING: Your ECO contains CIs that need to be added to the PN Reserve Log.\n         '
                   'See file PNR_WARNINGS for details.\n')
@@ -743,8 +754,8 @@ def main():
 
 def network_is_present():
     try:
-        req = urllib.request.Request("http://0.0.0")
-        # req = urllib.request.Request(US_DOMAIN_IP)
+        # req = urllib.request.Request("http://0.0.0")
+        req = urllib.request.Request(US_DOMAIN_IP)
         urllib.request.urlopen(req, timeout=1)
 
     except urllib.error.URLError:
