@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-VERSION_STRING = "CID v1.44 03/13/2015"
+VERSION_STRING = "CID v1.46 03/16/2015"
 
 import argparse
 import sys
@@ -26,14 +26,9 @@ HAS_NO_MEDIA = ["scif", "hard_copy", "hardcopy", "synergy"]
 # active US domain network connection before trying to access network resources.
 US_DOMAIN_IP = "http://138.126.103.197"
 
-# These 3 constants control customized behavior. The first lists users for whom -p should not be the
-# default mode.  The 2nd lists mobile users for whom the network connection should be tested before
-# attempts are made to access the PNR log over the network the 3rd is pattern that matches the names
-# of IT-controlled remote access machines like APPSIG-TRM3 or SVO-TRM2 -- using one of these machines
-# will restore the -p as a default mode for users in the DASH_P_NOT_DEFAULT group.
-DASH_P_NOT_DEFAULT = ["ast1941"]
+# This constant lists mobile users for whom the network connection should be tested before
+# attempts are made to access the PNR log over the network
 MOBILE_USERS = ["ast1382"]
-RDC_MACHINE_RE = re.compile(r'TRM(\d+)?$')
 
 # Keep track of whether errors have been found, so if there are errors we can skip warnings and CID generation
 ERRORS_FOUND = False
@@ -191,7 +186,7 @@ def extract_ps1_tab_part_nums(arguments, pnr_list=None, pnr_warnings=[], pnr_dup
 
     invalid_revs_ok = arguments["invalid_revs"]
 
-    # -n automatically prints all parts
+    # -n automatically prints *all* new parts, even if they're not on any media
     if arguments["all_parts"] or arguments["new_pn_only"]:
         media_to_skip = []
     else:
@@ -617,23 +612,23 @@ def make_parser():
 
     # parser.add_argument_group creates a named subgroup, for better organization on help screen
     output_group = parser.add_argument_group('output modes (can be combined)')
-    output_group.add_argument('-m', '--print-to-many', action='store_true', default=False,
-                              help="print to many files (default)")
     output_group.add_argument('-o', '--print-to-one', action='store_true', default=False,
-                              help="print to one file (CONTENTS_ID.all)")
+                              help='print all CIs to one file, vs. one per media type')
     output_group.add_argument('-a', '--all-parts', action='store_true', default=False,
                               help="include PNs that aren't on any media")
     output_group.add_argument('-i', '--invalid-revs', action='store_true', default=False,
                               help="allow invalid revisions (issue a warning)")
+    output_group.add_argument('-n', '--new-pn-only', action='store_true', default=False,
+                              help="print only new part numbers, to file NEW_PARTS")
     output_group.add_argument('-e', type=str, choices=["unix", "dos"], default="unix",
                               help="set EOL type for files (default is unix)")
 
     special_group = parser.add_argument_group('special modes')
     special_meg = special_group.add_mutually_exclusive_group()
-    special_meg.add_argument('-n', '--new-pn-only', action='store_true', default=False,
-                             help="print only new part numbers, to file NEW_PARTS")
     special_meg.add_argument('-p', '--pnr-verify', action='store_true', default=True,
-                             help="verify ECO PNs vs. Part Number Reserve Log")
+                             help="verify ECO PNs vs. Part Number Reserve Log (default)")
+    special_meg.add_argument('-np', '--no-pnr-verify', action='store_true', default=False,
+                             help="do not verify vs. Part Number Reserve Log")
 
     # Writing to xlsm files doesn't currently work, and even writing to xlsx breaks formatting
     # special_meg.add_argument('-u', '--update-pnr', action='store_true', default=False,
@@ -665,36 +660,29 @@ def main():
     pnr_warnings = []
     pnr_dupe_pn_list = []
 
-    # Set app behavior in default mode. sys.argv will have two elements if the  script was
-    # called with no extra flags... if you don't want -p set by default for a user, add
-    # their RAST username to the constant DASH_P_NOT_DEFAULT
-    if (len(sys.argv) == 2) and (os.environ['USERNAME'].lower() in DASH_P_NOT_DEFAULT):
-        # If user is using Remote Desktop Connection to connect to a TRM terminal, -p should be default.
-        if not RDC_MACHINE_RE.match(os.environ['COMPUTERNAME']):
-            print('PN Reserve log not verified by default for {}, '
-                  'use "-p" to force.\n'.format(os.environ['USERNAME'].upper()))
-            arguments["pnr_verify"] = False
-        else:
-            print('TRM remote terminal detected, PN Reserve log verified by default.')
+    # pnr_verify should be the opposite of argument "no_pnr_verify"'s value
+    pnr_verify = not arguments["no_pnr_verify"]
 
-    if arguments["pnr_verify"]:
+    if pnr_verify:
         # Adding laptop users' usernames to MOBILE_USERS will force a network check before allowing PNR verification
         if os.environ['USERNAME'].lower() in MOBILE_USERS:
-            print("Mobile user detected, US domain detected? ".format(os.environ['USERNAME'].upper()), end=" ")
+            print("Mobile user detected, on ORION? ".format(os.environ['USERNAME'].upper()), end=" ")
             if network_is_present():
                 print("Yes.\nParsing PN Reserve Log...", end=" ")
             else:
                 print("No.\n\nWARNING: You don't seem to be on the US domain, skipping \n"
                       "         PN Reserve Log verification.\n")
-                arguments["pnr_verify"] = False
+                pnr_verify = False
+        else:
+            print("Parsing PN Reserve Log...", end=" ")
     else:
-        print("Parsing PN Reserve Log...", end=" ")
+        print('WARNING: In "-np" mode, will not validate against the PN Reserve Log.')
 
-    # if the pnr_verify arg is still set, go ahead and parse the PNR log.
-    if arguments["pnr_verify"]:
+    # if pnr_verify is still set, parse the PNR log.
+    if pnr_verify:
         pnr_list, pnr_warnings, pnr_dupe_pn_list = pnr.extract_part_nums_pnr()
 
-    print("Parsing ECO form...")
+    print("Parsing/validating ECO form...")
     # Extract ECO spreadsheet PNs in CONTENTS_ID format (returns a dict of multi-line strings, keyed to media type)
     cid_tables, cid_table_order, pnr_warnings, missing_from_pnr_warnings_issued = \
         extract_ps1_tab_part_nums(arguments, pnr_list, pnr_warnings, pnr_dupe_pn_list)
@@ -720,6 +708,10 @@ def main():
                 f.write(unidecode(warning) + "\n")
 
     if arguments["new_pn_only"]:
+
+        if arguments["print_to_one"]:
+            print('NOTE: -n (new parts only) will not generate CONTENTS_ID.X files.\n')
+
         print("Creating file NEW_PARTS, containing only new, unique parts...", end=' ')
         with io.open("NEW_PARTS", "w", newline=eol) as f:
             f.write("NOTE: This file lists only the new, unique parts on this ECO. Duplicate and previously-released\n"
@@ -741,10 +733,7 @@ def main():
                     f.write("\n\n")
 
         # if only -o was set, don't print to many.
-        if not arguments["print_to_one"] and not arguments["print_to_many"]:
-            arguments["print_to_many"] = True
-
-        if arguments["print_to_many"]:
+        if not arguments["print_to_one"]:
             for table in cid_table_order:
                 # write_single_cid_file outputs everything after the media type line to a CONTENTS_ID.<media type> file.
                 write_single_cid_file(bdt_utils.pretty_table(cid_tables[table], 3), eol)
