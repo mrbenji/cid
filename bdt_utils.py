@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+
 def pretty_money(amount):
     """
     Return integer or float as US-currency-formatted string.
@@ -61,6 +62,7 @@ def pretty_table(data, padding=2):
 
     return return_string
 
+
 def ul_string(string_to_ul, ul_char="-"):
     """
     Returns a 1-line string in "underlined" form.
@@ -72,3 +74,5 @@ def ul_string(string_to_ul, ul_char="-"):
     per char of string_to_ul
     """
     return string_to_ul + "\n" + (ul_char * len(string_to_ul))
+
+
