@@ -1,20 +1,25 @@
 #!/usr/bin/env python3
 
-VERSION_STRING = "CID v1.49 03/17/2015"
+VERSION_STRING = "CID v1.51 03/17/2015"
 
+# standard libraries
 import argparse
 import sys
 import os
 import io
-import openpyxl  # third party open source library, https://openpyxl.readthedocs.org/en/latest/
-from cid_classes import *  # custom object defs & helper functions for this script
-import cid_classes  # re-import to allow alternate means of access to constants in this module
-import bdt_utils  # Benji's bag-o'-utility-functions
-import pnr
-from unidecode import unidecode
 import urllib
-from colorama import init, Fore
-init()
+
+# Additional local modules factoring out cid functionality
+from cid_classes import *  # custom object defs & helper functions for this script
+import cid_classes         # re-import to allow alternate means of access to constants in this module
+import bdt_utils           # Benji's bag-o'-utility-functions
+import pnr                 # contains Part Number Reserve Log validation functionality
+
+# Third Party Open Source Libs
+import openpyxl                   # https://pypi.python.org/pypi/openpyxl/2.2.0
+from unidecode import unidecode   # https://pypi.python.org/pypi/Unidecode/0.04.17
+from colorama import init, Fore   # https://pypi.python.org/pypi/colorama/0.3.3
+init()  # for colorama -- initialize functionality
 
 # Update this revision when the ECO form is updated
 NEWEST_FORM_REV = Rev('B3')
@@ -31,9 +36,6 @@ US_DOMAIN_IP = "http://138.126.103.197"
 # This constant lists mobile users for whom the network connection should be tested before
 # attempts are made to access the PNR log over the network
 MOBILE_USERS = ["ast1382"]
-
-# Users who get ANSI color
-# COLOR_USERS = ["ast1382", "ast2145", "ast1941"]
 
 # Keep track of whether errors have been found, so if there are errors we can skip warnings and CID generation
 ERRORS_FOUND = False
@@ -76,8 +78,8 @@ def form_rev_switches(cover_sheet):
         PN_SHEET_COLS = 'ABCEFGH'
 
     if form_rev < NEWEST_FORM_REV:
-        warn_col("\nWARNING: You are using an outdated revision of the ECO form.\n"
-                 "         Please update to Rev. {} if possible.".format(NEWEST_FORM_REV.name))
+        warn_col("\nWARNING: You are using outdated ECO form revision {}.\n         Please update to Rev. {} "
+                 "if possible.".format(form_rev.name, NEWEST_FORM_REV.name))
         input("\nPress Enter to continue...")
 
     if form_rev > NEWEST_FORM_REV:
@@ -556,7 +558,7 @@ def extract_ps1_tab_part_nums(arguments, pnr_list=None, pnr_warnings=[], pnr_dup
                         iso_name_len = len(str(cell.value).replace('.iso', '').strip())
                         if iso_name_len > 16 and not ERRORS_FOUND:
                             warn_col('WARNING: ISO name in CI_Sheet cell {}{} is {} chars. Is vol name <= '
-                                     '16 chars?'.format(IN_COL, cell.row, iso_name_len))
+                                     '16 chars?\n'.format(IN_COL, cell.row, iso_name_len))
 
     return cid_tables, cid_table_order, pnr_warnings, missing_from_pnr_warnings_issued
 
@@ -603,24 +605,15 @@ def write_single_cid_file(contents_id_table, eol):
 
 
 def warn_col(string_for_warning, end="\n"):
-    # if os.environ["USERNAME"].lower() in COLOR_USERS:
-        print(Fore.YELLOW + string_for_warning + Fore.RESET, end=end)
-    # else:
-    #     print(string_for_warning, end=end)
+    print(Fore.YELLOW + string_for_warning + Fore.RESET, end=end)
 
 
 def err_col(string_for_error, end="\n"):
-    # if os.environ["USERNAME"].lower() in COLOR_USERS:
-        print(Fore.RED + string_for_error + Fore.RESET, end=end)
-    # else:
-    #     print(string_for_error, end=end)
+    print(Fore.RED + string_for_error + Fore.RESET, end=end)
 
 
 def inf_col(string_for_info, end="\n"):
-    # if os.environ["USERNAME"].lower() in COLOR_USERS:
-        print(Fore.CYAN + string_for_info + Fore.RESET, end=end)
-    # else:
-    #     print(string_for_info, end=end)
+    print(Fore.CYAN + string_for_info + Fore.RESET, end=end)
 
 
 def make_parser():
@@ -629,7 +622,8 @@ def make_parser():
 
     :return: an argparse parser object
     """
-    description = Fore.GREEN + VERSION_STRING + Fore.RESET + " - Create CONTENTS_ID files from ECO form PNs."
+    description = Fore.GREEN + VERSION_STRING + Fore.RESET + " - " + Fore.CYAN + \
+                  "Create CONTENTS_ID files from ECO" + Fore.RESET
     parser = argparse.ArgumentParser(description=description)
 
     # -v/--version, like -h/--help, ignores other arguments and prints requested info
@@ -670,6 +664,8 @@ def main():
     Command line execution starts here.
     """
 
+    print(Fore.GREEN + VERSION_STRING + "\n" + Fore.RESET)
+
     global ERRORS_FOUND
     global CONSOLE_HOLD
 
@@ -679,8 +675,6 @@ def main():
 
     # Convert parsed arguments from Namespace to dictionary
     arguments = vars(arguments)
-
-    print(Fore.GREEN + VERSION_STRING + "\n" + Fore.RESET)
 
     if arguments["invalid_revs"]:
         cid_classes.VALID_REV_CHARS = VALID_AND_INVALID_REV_CHARS

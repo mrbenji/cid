@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-import openpyxl           # third party open source library, https://openpyxl.readthedocs.org/en/latest/
+import openpyxl  # third party open source library, https://pypi.python.org/pypi/openpyxl/2.2.0
 import sys
 import cid
 
