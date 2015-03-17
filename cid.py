@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-VERSION_STRING = "CID v1.47 03/16/2015"
+VERSION_STRING = "CID v1.49 03/17/2015"
 
 import argparse
 import sys
@@ -33,10 +33,13 @@ US_DOMAIN_IP = "http://138.126.103.197"
 MOBILE_USERS = ["ast1382"]
 
 # Users who get ANSI color
-COLOR_USERS = ["ast1382", "ast2145", "ast1941"]
+# COLOR_USERS = ["ast1382", "ast2145", "ast1941"]
 
 # Keep track of whether errors have been found, so if there are errors we can skip warnings and CID generation
 ERRORS_FOUND = False
+
+# Set if -c argument passed, facilitates pausing before exit to keep console from closing
+CONSOLE_HOLD = False
 
 # column aliases, used to allow different ECO form revisions to use different columns for the same data
 AD_COL = 'A'
@@ -626,11 +629,11 @@ def make_parser():
 
     :return: an argparse parser object
     """
-    description = VERSION_STRING + " - Create CONTENTS_ID files from PNs on ECO form."
+    description = Fore.GREEN + VERSION_STRING + Fore.RESET + " - Create CONTENTS_ID files from ECO form PNs."
     parser = argparse.ArgumentParser(description=description)
 
     # -v/--version, like -h/--help, ignores other arguments and prints requested info
-    parser.add_argument('-v', '-V', '--version', action='version', version=VERSION_STRING)
+    parser.add_argument('-v', '-V', '--version', action='version', version=Fore.GREEN + VERSION_STRING + Fore.RESET)
 
     # this is a required argument unless -v or -h were used
     parser.add_argument("eco_file", type=str, help="eco form filename, w/ full path if not in current dir")
@@ -645,6 +648,8 @@ def make_parser():
                               help="allow invalid revisions (issue a warning)")
     output_group.add_argument('-n', '--new-pn-only', action='store_true', default=False,
                               help="print only new part numbers, to file NEW_PARTS")
+    output_group.add_argument('-c', '--console-hold', action='store_true', default=False,
+                              help="pause before exit, to prevent console closure")
     output_group.add_argument('-e', type=str, choices=["unix", "dos"], default="unix",
                               help="set EOL type for files (default is unix)")
 
@@ -666,6 +671,7 @@ def main():
     """
 
     global ERRORS_FOUND
+    global CONSOLE_HOLD
 
     # "plumbing" for argparse, a standard argument parsing library
     parser = make_parser()
@@ -685,6 +691,8 @@ def main():
 
     # pnr_verify should be the opposite of argument "no_pnr_verify"'s value
     pnr_verify = not arguments["no_pnr_verify"]
+
+    CONSOLE_HOLD = arguments["console_hold"]
 
     if pnr_verify:
         # Adding laptop users' usernames to MOBILE_USERS will force a network check before allowing PNR verification
@@ -780,7 +788,7 @@ def network_is_present():
 
 
 def exit_app(exit_code=1):
-    if len(sys.argv) == 2:
+    if CONSOLE_HOLD:
         input("\nPress Enter to continue...")
 
     sys.exit(exit_code)

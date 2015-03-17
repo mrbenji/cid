@@ -2,6 +2,7 @@
 
 import openpyxl           # third party open source library, https://openpyxl.readthedocs.org/en/latest/
 import sys
+import cid
 
 from cid_classes import *
 
@@ -68,6 +69,10 @@ def extract_part_nums_pnr():
                 if not is_valid_part(part_num):
                     pnr_warnings.append("PNR WARNING: Skipping PNR Log row {} "
                                         "-- illegal part number.".format(row_num))
+                    cid.err_col("\n\nERROR: Illegal part number in PNR Log row {}.\n"
+                                "       PN '{}' on ECO {}.\n".format(row_num, part_num, eco_num))
+                    input("Press Enter to continue...")
+
                 if not is_valid_rev(part_rev):
                     pnr_warnings.append("PNR WARNING: Skipping PNR Log row {} "
                                         "-- illegal revision {}.".format(row_num, part_rev))
