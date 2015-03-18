@@ -1,13 +1,14 @@
 #!/usr/bin/env python3
 
 import openpyxl  # third party open source library, https://pypi.python.org/pypi/openpyxl/2.2.0
-import sys
 import cid
 
 from cid_classes import *
 
-PNRL_PATH = r"\\us.ray.com\SAS\AST\eng\Operations\CM\Internal\Staff\CM_Submittals\PN_Reserve.xlsm"
-# PNRL_PATH = "PN_Reserve_copy.xlsm"
+# PNRL_PATH = r"\\us.ray.com\SAS\AST\eng\Operations\CM\Internal\Staff\CM_Submittals\PN_Reserve.xlsm"
+
+PNRL_PATH = "PN_Reserve_copy.xlsm"
+cid.warn_col("\nWARNING: Using local PN_Reserve Log for testing!\n")
 
 
 def extract_part_nums_pnr():
@@ -26,18 +27,18 @@ def extract_part_nums_pnr():
         # openpyxl is a library for reading/writing Excel files.
         pnr_log = openpyxl.load_workbook(PNRL_PATH)
     except openpyxl.utils.exceptions.InvalidFileException:
-        print('\nPNR ERROR: Could not open Part Number Reserve Log at path:'
-              '\n       {}'.format(PNRL_PATH))
-        sys.exit(1)
+        cid.err_col('\nPNR ERROR: Could not open Part Number Reserve Log at path:'
+                    '\n       {}'.format(PNRL_PATH))
+        cid.exit_app()
 
     # part number reserve workbook must have a sheet called "PN_Rev"
     pn_sheet = pnr_log.get_sheet_by_name('PN_Rev')
     try:
         pn_rows = pn_sheet.rows
     except AttributeError:
-        print('\nPNR ERROR: No PN_Rev tab on Part Number Reserve Log at path:'
-              '\n\n     {}'.format(PNRL_PATH))
-        sys.exit(1)
+        cid.err_col('\nPNR ERROR: No PN_Rev tab on Part Number Reserve Log at path:'
+                    '\n\n     {}'.format(PNRL_PATH))
+        cid.exit_app()
 
     row_num = 0
     pnr_list = ListOfParts()
@@ -45,9 +46,9 @@ def extract_part_nums_pnr():
     pnr_warnings = []
 
     if not pn_sheet['A1'].value:
-        print("\nPNR ERROR: PNR Log does not appear to be valid!"
-              "Cell A1 of {} is blank.".format(PNRL_PATH))
-        sys.exit(1)
+        cid.err_col("\nPNR ERROR: PNR Log does not appear to be valid!"
+                    "Cell A1 of {} is blank.".format(PNRL_PATH))
+        cid.exit_app()
 
     for row in pn_rows:
         row_num += 1

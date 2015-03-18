@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-VERSION_STRING = "CID v1.51 03/17/2015"
+VERSION_STRING = "CID v1.52 03/18/2015"
 
 # standard libraries
 import argparse
@@ -16,9 +16,9 @@ import bdt_utils           # Benji's bag-o'-utility-functions
 import pnr                 # contains Part Number Reserve Log validation functionality
 
 # Third Party Open Source Libs
-import openpyxl                   # https://pypi.python.org/pypi/openpyxl/2.2.0
-from unidecode import unidecode   # https://pypi.python.org/pypi/Unidecode/0.04.17
-from colorama import init, Fore   # https://pypi.python.org/pypi/colorama/0.3.3
+import openpyxl                          # https://pypi.python.org/pypi/openpyxl/2.2.0
+from unidecode import unidecode          # https://pypi.python.org/pypi/Unidecode/0.04.17
+from colorama import init, Fore, Style   # https://pypi.python.org/pypi/colorama/0.3.3
 init()  # for colorama -- initialize functionality
 
 # Update this revision when the ECO form is updated
@@ -605,11 +605,11 @@ def write_single_cid_file(contents_id_table, eol):
 
 
 def warn_col(string_for_warning, end="\n"):
-    print(Fore.YELLOW + string_for_warning + Fore.RESET, end=end)
+    print(Fore.YELLOW + Style.BRIGHT + string_for_warning + Fore.RESET + Style.RESET_ALL, end=end)
 
 
 def err_col(string_for_error, end="\n"):
-    print(Fore.RED + string_for_error + Fore.RESET, end=end)
+    print(Fore.RED + Style.BRIGHT + string_for_error + Fore.RESET + Style.RESET_ALL, end=end)
 
 
 def inf_col(string_for_info, end="\n"):
@@ -622,8 +622,7 @@ def make_parser():
 
     :return: an argparse parser object
     """
-    description = Fore.GREEN + VERSION_STRING + Fore.RESET + " - " + Fore.CYAN + \
-                  "Create CONTENTS_ID files from ECO" + Fore.RESET
+    description = VERSION_STRING + " - Create CONTENTS_ID files and validate ECO forms"
     parser = argparse.ArgumentParser(description=description)
 
     # -v/--version, like -h/--help, ignores other arguments and prints requested info
@@ -664,14 +663,15 @@ def main():
     Command line execution starts here.
     """
 
-    print(Fore.GREEN + VERSION_STRING + "\n" + Fore.RESET)
-
     global ERRORS_FOUND
     global CONSOLE_HOLD
 
     # "plumbing" for argparse, a standard argument parsing library
     parser = make_parser()
     arguments = parser.parse_args(sys.argv[1:])
+
+    # needs to be here or the version string will print twice when -v is used
+    print(Fore.GREEN + VERSION_STRING + "\n" + Fore.RESET)
 
     # Convert parsed arguments from Namespace to dictionary
     arguments = vars(arguments)
