@@ -204,3 +204,7 @@ class ListOfParts(object):
             return Rev("-")
 
         return self.parts[pn].max_rev.next_rev
+
+    @property
+    def count(self):
+        return len(self.parts.keys())

@@ -259,7 +259,7 @@ def extract_ps1_tab_part_nums(arguments, pnr_list=None, pnr_warnings=[], pnr_dup
     prev_rev = ""
     part_numbers_already_used = {}
     old_part_numbers = {}
-    missing_from_pnr_warnings_issued = []
+    missing_from_pnr = ListOfParts()
     skip_media = False
 
     for set_name in media_set_order:
@@ -399,11 +399,11 @@ def extract_ps1_tab_part_nums(arguments, pnr_list=None, pnr_warnings=[], pnr_dup
 
                         else:
                             # Report if a new pn/rev combo is not in the PNR Log (report only once per pn/rev)
-                            if current_pn_plus_rev not in missing_from_pnr_warnings_issued:
-                                pnr_warnings.append("WARNING: CI_Sheet row {} - Add part {}"
-                                                    " to the PN Reserve Log.\n".format(cell.row,
+                            if not missing_from_pnr.has_part(current_pn, current_rev):
+                                pnr_warnings.append("ECO WARNING: row {} - Add part {}"
+                                                    " to the PN Reserve Log.".format(cell.row,
                                                                                        current_pn_plus_rev))
-                                missing_from_pnr_warnings_issued.append(current_pn_plus_rev)
+                                missing_from_pnr.add_part(current_pn, current_rev)
 
                             # For new parts, warning if if new rev doesn't follow previous rev in PNRL
                             if pnr_list.has_part(current_pn, prev_rev):
@@ -477,10 +477,10 @@ def extract_ps1_tab_part_nums(arguments, pnr_list=None, pnr_warnings=[], pnr_dup
                                         ERRORS_FOUND = True
                                 else:
                                     # Report if an old pn/rev combo is not in the PNR Log (report only once per pn/rev)
-                                    if current_pn_plus_rev not in missing_from_pnr_warnings_issued:
+                                    if not missing_from_pnr.has_part(current_rev, current_rev):
                                         pnr_warnings.append("WARNING: CI_Sheet row {} - released part {} not "
                                                             "in the PNR Log.".format(cell.row, current_pn_plus_rev))
-                                        missing_from_pnr_warnings_issued.append(current_pn_plus_rev)
+                                        missing_from_pnr.add_part(current_pn, current_rev)
 
                             # The following block of validation tests keeps track of the ECO numbers recorded
                             # for previously released part/rev combos.
@@ -560,7 +560,7 @@ def extract_ps1_tab_part_nums(arguments, pnr_list=None, pnr_warnings=[], pnr_dup
                             warn_col('WARNING: ISO name in CI_Sheet cell {}{} is {} chars. Is vol name <= '
                                      '16 chars?\n'.format(IN_COL, cell.row, iso_name_len))
 
-    return cid_tables, cid_table_order, pnr_warnings, missing_from_pnr_warnings_issued
+    return cid_tables, cid_table_order, pnr_warnings, missing_from_pnr
 
 
 def write_single_cid_file(contents_id_table, eol):
@@ -711,7 +711,7 @@ def main():
 
     print("Parsing/validating ECO form...")
     # Extract ECO spreadsheet PNs in CONTENTS_ID format (returns a dict of multi-line strings, keyed to media type)
-    cid_tables, cid_table_order, pnr_warnings, missing_from_pnr_warnings_issued = \
+    cid_tables, cid_table_order, pnr_warnings, missing_from_pnr = \
         extract_ps1_tab_part_nums(arguments, pnr_list, pnr_warnings, pnr_dupe_pn_list)
 
     # Set file output line endings to requested format.  One (and only one) will always be True.  Default is UNIX.
@@ -727,7 +727,7 @@ def main():
     if pnr_warnings:
         # warn_col('\nWARNING: Additional issues found in PN Reserve Log validation phase.\n         '
         #       'See file PNR_WARNINGS for details.\n')
-        if missing_from_pnr_warnings_issued:
+        if missing_from_pnr.count:
             warn_col('WARNING: Your ECO contains CIs that need to be added to the PN Reserve Log.\n         '
                      'See file PNR_WARNINGS for details.\n')
         with io.open("PNR_WARNINGS", "w", newline=eol) as f:
