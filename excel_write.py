@@ -80,18 +80,20 @@ def write_list_to_pnr(pnrl_path, eco_num, list_of_parts=ListOfParts(), close_wor
     user = uid_to_name(os.environ['USERNAME'])
     current_date = time.strftime("%Y-%m-%d")
 
+    # xlwings writes large data blocks much faster if all passed in at once as a 2D list (list of lists)
     add_table = []
 
     for part_num in list_of_parts.list_of_lists():
         if part_num[2] == eco_num:
             add_table.append([part_num[0], None, part_num[1], part_num[2], None])
-            print(Fore.CYAN + "  Added {} Rev. {}".format(part_num[0], part_num[1]) + Fore.RESET)
+            print(Fore.CYAN + "  Adding {} Rev. {}".format(part_num[0], part_num[1]) + Fore.RESET)
         else:
             add_table.append([part_num[0], None, part_num[1], part_num[2],
                               "cid add {} ({} for ECO {})".format(current_date, user, eco_num)])
-            print(Fore.CYAN + "  Added {} Rev. {} (ECO {})".format(part_num[0], part_num[1], part_num[2]) + Fore.RESET)
+            print(Fore.CYAN + "  Adding {} Rev. {} (ECO {})".format(part_num[0], part_num[1], part_num[2]) + Fore.RESET)
         current_row += 1
 
+    # pass entire block of data to xlwings for file write
     Range('A{}:E{}'.format(first_row, current_row)).value = add_table
 
     wb.save()

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-VERSION_STRING = "CID v1.54 03/20/2015"
+VERSION_STRING = "CID v1.55 03/20/2015"
 
 # standard libraries
 import argparse
@@ -476,8 +476,8 @@ def extract_ps1_tab_part_nums(arguments, pnr_list=None, pnr_warnings=[], pnr_dup
                                 else:
                                     # Report if an old pn/rev combo is not in the PNR Log (report only once per pn/rev)
                                     if not missing_from_pnr.has_part(current_rev, current_rev):
-                                        pnr_warnings.append("WARNING: CI_Sheet row {} - released part {} not "
-                                                            "in the PNR Log.".format(cell.row, current_pn_plus_rev))
+                                        pnr_warnings.append("ECO WARNING: row {} - released CI {} not "
+                                                            "in PNR Log.".format(cell.row, current_pn_plus_rev))
                                         missing_from_pnr.add_part(current_pn, current_rev, cell.value)
 
                             # The following block of validation tests keeps track of the ECO numbers recorded
