@@ -74,20 +74,25 @@ def write_list_to_pnr(pnrl_path, eco_num, list_of_parts=ListOfParts(), close_wor
             cid.warn_col("\nWARNING: Having trouble setting PNR Log active tab, could not write to it.")
             return 0
 
-    current_row = calc_first_blank()
+    first_row = calc_first_blank()
+    current_row = first_row
 
     user = uid_to_name(os.environ['USERNAME'])
     current_date = time.strftime("%Y-%m-%d")
+
+    add_table = []
+
     for part_num in list_of_parts.list_of_lists():
         if part_num[2] == eco_num:
-            Range('A{r}:D{r}'.format(r=current_row)).value = [part_num[0], None, part_num[1], part_num[2]]
-            print(Fore.CYAN + "  Added {} Rev. {} (current ECO)".format(part_num[0], part_num[1]) + Fore.RESET)
+            add_table.append([part_num[0], None, part_num[1], part_num[2], None])
+            print(Fore.CYAN + "  Added {} Rev. {}".format(part_num[0], part_num[1]) + Fore.RESET)
         else:
-            Range('A{r}:E{r}'.format(r=current_row)).value = [part_num[0], None, part_num[1], part_num[2],
-                                                              "cid add {} " "({} for ECO {})".format(current_date, user,
-                                                                                                     eco_num)]
+            add_table.append([part_num[0], None, part_num[1], part_num[2],
+                              "cid add {} ({} for ECO {})".format(current_date, user, eco_num)])
             print(Fore.CYAN + "  Added {} Rev. {} (ECO {})".format(part_num[0], part_num[1], part_num[2]) + Fore.RESET)
         current_row += 1
+
+    Range('A{}:E{}'.format(first_row, current_row)).value = add_table
 
     wb.save()
     if close_workbook:
