@@ -25,6 +25,7 @@ init()  # for colorama -- initialize functionality
 NEWEST_FORM_REV = Rev('B3')
 
 ECO_PATH = ""
+CURRENT_ECO = 0
 
 # HAS_NO_MEDIA is a list of "media" tags used for P/Ns that are not put on any official media.  By default
 # they are skipped during CONTENTS_ID output. Media tags are converted to lowercase, with spaces converted
@@ -247,9 +248,11 @@ def extract_ps1_tab_part_nums(arguments, pnr_list=None, pnr_warnings=[], pnr_dup
     media_sets, media_set_order = split_sheet_rows_ps1(pn_sheet, cover_sheet, pn_rows, media_to_skip, arguments)
 
     global ERRORS_FOUND
+    global CURRENT_ECO
+
     cid_tables = {}
     cid_table_order = []
-    current_eco = str(cover_sheet['S2'].value)
+    CURRENT_ECO = str(cover_sheet['S2'].value)
     current_pn = ""
     current_rev = ""
     prev_rev = ""
@@ -384,13 +387,13 @@ def extract_ps1_tab_part_nums(arguments, pnr_list=None, pnr_warnings=[], pnr_dup
 
                         # For new parts, error if pn in PNRL and ECO# listed is not the current ECO.
                         if pnr_list.has_part(current_pn, current_rev):
-                            if pnr_list.parts[current_pn].revs[current_rev].eco != current_eco:
+                            if pnr_list.parts[current_pn].revs[current_rev].eco != CURRENT_ECO:
                                 err_col("ERROR: CI_Sheet row {} -- new pn {} is marked in the\n       PN Reserve "
                                         "Log as released on ECO {}, not "
                                         "current ECO {}.\n".format(cell.row,
                                                                    current_pn_plus_rev,
                                                                    pnr_list.parts[current_pn].revs[current_rev].eco,
-                                                                   current_eco))
+                                                                   CURRENT_ECO))
                                 ERRORS_FOUND = True
 
                         else:
@@ -398,7 +401,7 @@ def extract_ps1_tab_part_nums(arguments, pnr_list=None, pnr_warnings=[], pnr_dup
                             if not missing_from_pnr.has_part(current_pn, current_rev):
                                 pnr_warnings.append("ECO WARNING: row {} - CI {} not in"
                                                     " the PN Reserve Log.".format(cell.row, current_pn_plus_rev))
-                                missing_from_pnr.add_part(current_pn, current_rev, current_eco)
+                                missing_from_pnr.add_part(current_pn, current_rev, CURRENT_ECO)
 
                             # For new parts, warning if if new rev doesn't follow previous rev in PNRL
                             if pnr_list.has_part(current_pn, prev_rev):
@@ -719,7 +722,7 @@ def main():
             else:
                 inf_col('INFO: {} CIs on your ECO are missing from the PN Reserve Log.\n'.format(missing_from_pnr.count))
             if input("Automatically add missing CI(s) to PN Reserve Log? [y/N] ") in ['Y', 'y']:
-                if write_list_to_pnr(pnr.PNRL_PATH, missing_from_pnr, close_workbook=False):
+                if write_list_to_pnr(pnr.PNRL_PATH, CURRENT_ECO, missing_from_pnr, close_workbook=False):
                     print("")
                     for ci in missing_from_pnr.flat_pretty_list():
                         # print(Fore.CYAN + "  Added {}".format(ci) + Fore.RESET)
