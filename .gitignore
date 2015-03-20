@@ -2,6 +2,7 @@
 CONTENTS_ID.*
 NEW_PARTS
 PNR_WARNINGS
+*.bak
 
 # Excel workbooks
 *.xlsx

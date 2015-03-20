@@ -1,9 +1,13 @@
 #!/usr/bin/env python3
 
-from functools import total_ordering
-from unidecode import unidecode
+# standard libraries
 import re
-import six
+from collections import defaultdict
+
+# third party open source packages
+from functools import total_ordering   # https://pypi.python.org/pypi/functools/0.5
+from unidecode import unidecode        # https://pypi.python.org/pypi/Unidecode/0.04.17
+import six                             # https://pypi.python.org/pypi/six/1.9.0
 
 # The chars in VALID_REV_CHARS are all the valid options for positions in the rev
 # IMPORTANT:  if the "-i" flag is used, VALID_REV_CHARS is overwritten with val of VALID_AND_INVALID_REV_CHARS
@@ -28,8 +32,8 @@ def is_valid_rev(rev_text, mode=1):
     if isinstance(rev_text, int):
         rev_text = str(rev_text)
 
-    # "six" is a module that allows for generic tests, in this case we're testing for a "string-like object"
-    # valid revs must be non-zero-length "string-like objects" (string, char, unicode)
+    # "six" is a package that allows for generic tests, in this case we're testing for a "string-like object"
+    # i.e. valid revs must be non-zero-length "string-like objects" (string, char, unicode)
     if not (isinstance(rev_text, six.string_types) or isinstance(rev_text, six.string_types)) or not len(rev_text):
         return False
 
@@ -162,10 +166,12 @@ class Part(object):
             raise ValueError(str(number).strip() + " is not a valid part number!")
 
     def has_rev(self, rev_text):
+        rev_text = str(rev_text)
         # returns True or False, based on whether or not rev_text is one of self.rev's keys
         return rev_text in self.revs
 
     def add_rev(self, rev_text, eco=None):
+        rev_text = str(rev_text)
         if self.has_rev(rev_text):
             return False
 
@@ -205,6 +211,31 @@ class ListOfParts(object):
 
         return self.parts[pn].max_rev.next_rev
 
+    def get_part(self, pn, rev):
+        if not self.has_part(pn, rev):
+            return None
+
+        return self.parts[pn].revs[rev]
+
+    def flat_pretty_list(self):
+        return_list = []
+        for part in sorted(self.parts):
+            for rev in sorted(self.parts[part].revs):
+                return_list.append("{} Rev. {}".format(self.parts[part].number,
+                                                       self.parts[part].revs[rev].name))
+        return return_list
+
+    def list_of_lists(self):
+        return_list = []
+        for part in sorted(self.parts):
+            for rev in sorted(self.parts[part].revs):
+                return_list.append([self.parts[part].number, self.parts[part].revs[rev].name,
+                                    self.parts[part].revs[rev].eco])
+        return return_list
+
     @property
     def count(self):
-        return len(self.parts.keys())
+        total = 0
+        for part in self.parts.keys():
+            total += len(self.parts[part].revs.keys())
+        return total

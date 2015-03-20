@@ -1,21 +1,21 @@
 #!/usr/bin/env python3
 
-VERSION_STRING = "CID v1.52 03/18/2015"
+VERSION_STRING = "CID v1.54 03/20/2015"
 
 # standard libraries
 import argparse
 import sys
 import os
 import io
-import urllib
 
 # Additional local modules factoring out cid functionality
-from cid_classes import *  # custom object defs & helper functions for this script
-import cid_classes         # re-import to allow alternate means of access to constants in this module
-import bdt_utils           # Benji's bag-o'-utility-functions
-import pnr                 # contains Part Number Reserve Log validation functionality
+from cid_classes import *    # Defined classes for Part, Rev, ListOfParts
+import cid_classes           # Re-import to allow alternate way to access constants
+import bdt_utils             # Benji's bag-o'-utility-functions
+import pnr                   # Part Number Reserve Log validation functionality
+from excel_write import *    # writing
 
-# Third Party Open Source Libs
+# third party open source packages
 import openpyxl                          # https://pypi.python.org/pypi/openpyxl/2.2.0
 from unidecode import unidecode          # https://pypi.python.org/pypi/Unidecode/0.04.17
 from colorama import init, Fore, Style   # https://pypi.python.org/pypi/colorama/0.3.3
@@ -24,18 +24,12 @@ init()  # for colorama -- initialize functionality
 # Update this revision when the ECO form is updated
 NEWEST_FORM_REV = Rev('B3')
 
+ECO_PATH = ""
+
 # HAS_NO_MEDIA is a list of "media" tags used for P/Ns that are not put on any official media.  By default
 # they are skipped during CONTENTS_ID output. Media tags are converted to lowercase, with spaces converted
 # to underscores, before they are checked against this list.
 HAS_NO_MEDIA = ["scif", "hard_copy", "hardcopy", "synergy"]
-
-# This constant holds an IP address known to be accessible from the US domain, used to verify we have an
-# active US domain network connection before trying to access network resources.
-US_DOMAIN_IP = "http://138.126.103.197"
-
-# This constant lists mobile users for whom the network connection should be tested before
-# attempts are made to access the PNR log over the network
-MOBILE_USERS = ["ast1382"]
 
 # Keep track of whether errors have been found, so if there are errors we can skip warnings and CID generation
 ERRORS_FOUND = False
@@ -171,13 +165,14 @@ def split_sheet_rows_ps1(pn_sheet, cover_sheet, pn_rows, media_to_skip, argument
 
     if form_rev > Rev('B2'):
         if not config_items_released:
-            warn_col('WARNING: No value entered for "configuration items released."\n'
-                     '         Cover Sheet cell C16 should be set to {}.'.format(new_part_number_count))
+            inf_col('INFO: Filled in Cover Sheet cell C16 ("configuration items released").\n'
+                    '      Was blank, updated to {}.\n'.format(new_part_number_count))
+            write_config_items_count(ECO_PATH, new_part_number_count, close_workbook=False)
         else:
             if not config_items_released == new_part_number_count:
-                warn_col('WARNING: Wrong value of {} entered for "configuration items released."\n'
-                         '         Cover Sheet cell C16 should be set to {}.'.format(config_items_released,
-                                                                                     new_part_number_count))
+                inf_col('INFO: Updated Cover Sheet cell C16 ("configuration items released").\n'
+                        '      Was set to {}, corrected to {}.\n'.format(config_items_released, new_part_number_count))
+                write_config_items_count(ECO_PATH, new_part_number_count, close_workbook=False)
 
     return media_sets, media_set_order
 
@@ -207,11 +202,11 @@ def extract_ps1_tab_part_nums(arguments, pnr_list=None, pnr_warnings=[], pnr_dup
 
     try:
         # openpyxl is a library for reading/writing Excel files.
-        eco_form = openpyxl.load_workbook(arguments["eco_file"])
+        eco_form = openpyxl.load_workbook(ECO_PATH)
 
     except openpyxl.utils.exceptions.InvalidFileException:
         err_col('\nERROR: Could not open ECO form at path:\n'
-                '       {}\n\n       Is path correct?'.format(arguments["eco_file"]))
+                '       {}\n\n       Is path correct?'.format(ECO_PATH))
         exit_app()
 
     # ECO form workbook must have a sheet named "CoverSheet"
@@ -226,7 +221,7 @@ def extract_ps1_tab_part_nums(arguments, pnr_list=None, pnr_warnings=[], pnr_dup
 
         except KeyError:
             err_col('\nERROR: No "CoverSheet" or "NewCoverSheet" tab in ECO form at path:\n'
-                    '       {}'.format(arguments["eco_file"]))
+                    '       {}'.format(ECO_PATH))
             exit_app()
 
     # Determine version of form being used, adjust constants, etc. accordingly
@@ -245,7 +240,7 @@ def extract_ps1_tab_part_nums(arguments, pnr_list=None, pnr_warnings=[], pnr_dup
 
         except KeyError:
             err_col('\nERROR: No "CI_Sheet" or "PS1" tab in ECO form at path:\n'
-                    '       {}'.format(arguments["eco_file"]))
+                    '       {}'.format(ECO_PATH))
             exit_app()
 
     # convert pn_sheet.rows into a dict of row object lists, keyed by media keyword
@@ -254,6 +249,7 @@ def extract_ps1_tab_part_nums(arguments, pnr_list=None, pnr_warnings=[], pnr_dup
     global ERRORS_FOUND
     cid_tables = {}
     cid_table_order = []
+    current_eco = str(cover_sheet['S2'].value)
     current_pn = ""
     current_rev = ""
     prev_rev = ""
@@ -388,22 +384,21 @@ def extract_ps1_tab_part_nums(arguments, pnr_list=None, pnr_warnings=[], pnr_dup
 
                         # For new parts, error if pn in PNRL and ECO# listed is not the current ECO.
                         if pnr_list.has_part(current_pn, current_rev):
-                            if pnr_list.parts[current_pn].revs[current_rev].eco != str(cover_sheet['S2'].value):
+                            if pnr_list.parts[current_pn].revs[current_rev].eco != current_eco:
                                 err_col("ERROR: CI_Sheet row {} -- new pn {} is marked in the\n       PN Reserve "
                                         "Log as released on ECO {}, not "
                                         "current ECO {}.\n".format(cell.row,
                                                                    current_pn_plus_rev,
                                                                    pnr_list.parts[current_pn].revs[current_rev].eco,
-                                                                   str(cover_sheet['S2'].value)))
+                                                                   current_eco))
                                 ERRORS_FOUND = True
 
                         else:
                             # Report if a new pn/rev combo is not in the PNR Log (report only once per pn/rev)
                             if not missing_from_pnr.has_part(current_pn, current_rev):
-                                pnr_warnings.append("ECO WARNING: row {} - Add part {}"
-                                                    " to the PN Reserve Log.".format(cell.row,
-                                                                                       current_pn_plus_rev))
-                                missing_from_pnr.add_part(current_pn, current_rev)
+                                pnr_warnings.append("ECO WARNING: row {} - CI {} not in"
+                                                    " the PN Reserve Log.".format(cell.row, current_pn_plus_rev))
+                                missing_from_pnr.add_part(current_pn, current_rev, current_eco)
 
                             # For new parts, warning if if new rev doesn't follow previous rev in PNRL
                             if pnr_list.has_part(current_pn, prev_rev):
@@ -480,7 +475,7 @@ def extract_ps1_tab_part_nums(arguments, pnr_list=None, pnr_warnings=[], pnr_dup
                                     if not missing_from_pnr.has_part(current_rev, current_rev):
                                         pnr_warnings.append("WARNING: CI_Sheet row {} - released part {} not "
                                                             "in the PNR Log.".format(cell.row, current_pn_plus_rev))
-                                        missing_from_pnr.add_part(current_pn, current_rev)
+                                        missing_from_pnr.add_part(current_pn, current_rev, cell.value)
 
                             # The following block of validation tests keeps track of the ECO numbers recorded
                             # for previously released part/rev combos.
@@ -651,10 +646,6 @@ def make_parser():
     special_meg.add_argument('-np', '--no-pnr-verify', action='store_true', default=False,
                              help="do not verify ECO PNs vs. Part Number Reserve Log")
 
-    # Writing to xlsm files doesn't currently work, and even writing to xlsx breaks formatting
-    # special_meg.add_argument('-u', '--update-pnr', action='store_true', default=False,
-    # help="update Part Number Reserve Log with ECO PNs (future)")
-
     return parser
 
 
@@ -665,6 +656,7 @@ def main():
 
     global ERRORS_FOUND
     global CONSOLE_HOLD
+    global ECO_PATH
 
     # "plumbing" for argparse, a standard argument parsing library
     parser = make_parser()
@@ -675,6 +667,11 @@ def main():
 
     # Convert parsed arguments from Namespace to dictionary
     arguments = vars(arguments)
+
+    if arguments["eco_file"].find('\\') == -1:
+        ECO_PATH = os.getcwd() + '\\' + arguments["eco_file"]
+    else:
+        ECO_PATH = arguments["eco_file"]
 
     if arguments["invalid_revs"]:
         cid_classes.VALID_REV_CHARS = VALID_AND_INVALID_REV_CHARS
@@ -689,21 +686,9 @@ def main():
     CONSOLE_HOLD = arguments["console_hold"]
 
     if pnr_verify:
-        # Adding laptop users' usernames to MOBILE_USERS will force a network check before allowing PNR verification
-        if os.environ['USERNAME'].lower() in MOBILE_USERS:
-            print("Mobile user detected, on ORION? ".format(os.environ['USERNAME'].upper()), end=" ")
-            if network_is_present():
-                inf_col("Yes.")
-                print("Parsing PN Reserve Log...", end=" ")
-            else:
-                inf_col("No.")
-                warn_col("\nWARNING: You don't seem to be on the US domain, skipping \n"
-                         "         PN Reserve Log verification.\n")
-                pnr_verify = False
-        else:
-            print("Parsing PN Reserve Log...", end=" ")
+        print("Parsing PN Reserve Log...", end=" ")
     else:
-        warn_col('WARNING: In "-np" mode, will not validate against the PN Reserve Log.')
+        warn_col('WARNING: In "-np" mode, skipping validation against PN Reserve Log.')
 
     # if pnr_verify is still set, parse the PNR log.
     if pnr_verify:
@@ -727,9 +712,19 @@ def main():
     if pnr_warnings:
         # warn_col('\nWARNING: Additional issues found in PN Reserve Log validation phase.\n         '
         #       'See file PNR_WARNINGS for details.\n')
-        if missing_from_pnr.count:
-            warn_col('WARNING: Your ECO contains CIs that need to be added to the PN Reserve Log.\n         '
-                     'See file PNR_WARNINGS for details.\n')
+        missing_from_pnr_count = missing_from_pnr.count
+        if missing_from_pnr_count:
+            if missing_from_pnr_count == 1:
+                inf_col('INFO: 1 CI on your ECO is missing from the PN Reserve Log.\n')
+            else:
+                inf_col('INFO: {} CIs on your ECO are missing from the PN Reserve Log.\n'.format(missing_from_pnr.count))
+            if input("Automatically add missing CI(s) to PN Reserve Log? [y/N] ") in ['Y', 'y']:
+                if write_list_to_pnr(pnr.PNRL_PATH, missing_from_pnr, close_workbook=False):
+                    print("")
+                    for ci in missing_from_pnr.flat_pretty_list():
+                        # print(Fore.CYAN + "  Added {}".format(ci) + Fore.RESET)
+                        pnr_warnings.append("INFO: CID added {} to the PNR Log, ignore ECO warning.".format(ci))
+            print("")
         with io.open("PNR_WARNINGS", "w", newline=eol) as f:
             for warning in pnr_warnings:
                 f.write(unidecode(warning) + "\n")
@@ -767,18 +762,6 @@ def main():
                 write_single_cid_file(bdt_utils.pretty_table(cid_tables[table], 3), eol)
 
     exit_app(0)
-
-
-def network_is_present():
-    try:
-        # req = urllib.request.Request("http://0.0.0")
-        req = urllib.request.Request(US_DOMAIN_IP)
-        urllib.request.urlopen(req, timeout=1)
-
-    except urllib.error.URLError:
-        return False
-
-    return True
 
 
 def exit_app(exit_code=1):
