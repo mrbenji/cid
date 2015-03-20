@@ -66,9 +66,7 @@ def write_list_to_pnr(pnrl_path, list_of_parts=ListOfParts(), close_workbook=Tru
 
     current_row = calc_first_blank()
     for part_num in list_of_parts.list_of_lists():
-        Range('A{r}-D{r}'.format(r=current_row)).value = [part_num[0], None, part_num[1], part_num[2]]
-        # Range('C{}'.format(current_row)).value = part_num[1]
-        # Range('D{}'.format(current_row)).value = part_num[2]
+        Range('A{r}:D{r}'.format(r=current_row)).value = [part_num[0], None, part_num[1], part_num[2]]
         print(Fore.CYAN + "  Added {} Rev. {} (ECO {})".format(part_num[0], part_num[1], part_num[2]) + Fore.RESET)
         current_row += 1
 
