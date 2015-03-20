@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-VERSION_STRING = "CID v1.57 03/20/2015"
+VERSION_STRING = "CID v2.00 03/20/2015"
 
 # standard libraries
 import argparse
