@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-VERSION_STRING = "CID v1.55 03/20/2015"
+VERSION_STRING = "CID v1.57 03/20/2015"
 
 # standard libraries
 import argparse
@@ -104,6 +104,7 @@ def split_sheet_rows_ps1(pn_sheet, cover_sheet, pn_rows, media_to_skip, argument
     media_sets = {"skipped": []}
     media_set_order = []
     skip_media_set_appended = False
+    new_parts = ListOfParts()
 
     # split PN rows into per-media-type lists
     for row in pn_rows:
@@ -150,11 +151,16 @@ def split_sheet_rows_ps1(pn_sheet, cover_sheet, pn_rows, media_to_skip, argument
                 new_part_number_count += 1
                 if arguments["new_pn_only"]:
                     media_sets[current_media].append(row)
+                    new_parts.add_part(str(pn_sheet[AD_COL + str(row_num)].value).strip(),
+                                       str(pn_sheet[NR_COL + str(row_num)].value).strip(),
+                                       CURRENT_ECO,
+                                       str(pn_sheet[DES_COL + str(row_num)].value).strip()
+                                       )
                     # return to the top of the for loop
                     continue
 
             # if not on skipped media, add the row to the appropriate list in the media_sets dict
-            if current_media and current_media_type not in media_to_skip:
+            if not arguments["new_pn_only"] and current_media and current_media_type not in media_to_skip:
                 media_sets[current_media].append(row)
             else:
                 media_sets["skipped"].append(row)
@@ -175,7 +181,7 @@ def split_sheet_rows_ps1(pn_sheet, cover_sheet, pn_rows, media_to_skip, argument
                         '      Was set to {}, corrected to {}.\n'.format(config_items_released, new_part_number_count))
                 write_config_items_count(ECO_PATH, new_part_number_count, close_workbook=False)
 
-    return media_sets, media_set_order
+    return media_sets, media_set_order, new_parts
 
 
 def extract_ps1_tab_part_nums(arguments, pnr_list=None, pnr_warnings=[], pnr_dupe_pn_list=[]):
@@ -245,7 +251,8 @@ def extract_ps1_tab_part_nums(arguments, pnr_list=None, pnr_warnings=[], pnr_dup
             exit_app()
 
     # convert pn_sheet.rows into a dict of row object lists, keyed by media keyword
-    media_sets, media_set_order = split_sheet_rows_ps1(pn_sheet, cover_sheet, pn_rows, media_to_skip, arguments)
+    media_sets, media_set_order, new_parts = \
+        split_sheet_rows_ps1(pn_sheet, cover_sheet, pn_rows, media_to_skip, arguments)
 
     global ERRORS_FOUND
     global CURRENT_ECO
@@ -400,7 +407,7 @@ def extract_ps1_tab_part_nums(arguments, pnr_list=None, pnr_warnings=[], pnr_dup
                             # Report if a new pn/rev combo is not in the PNR Log (report only once per pn/rev)
                             if not missing_from_pnr.has_part(current_pn, current_rev):
                                 pnr_warnings.append("ECO WARNING: row {} - CI {} not in"
-                                                    " the PN Reserve Log.".format(cell.row, current_pn_plus_rev))
+                                                    " the PNR Log.".format(cell.row, current_pn_plus_rev))
                                 missing_from_pnr.add_part(current_pn, current_rev, CURRENT_ECO)
 
                             # For new parts, warning if if new rev doesn't follow previous rev in PNRL
@@ -475,9 +482,9 @@ def extract_ps1_tab_part_nums(arguments, pnr_list=None, pnr_warnings=[], pnr_dup
                                         ERRORS_FOUND = True
                                 else:
                                     # Report if an old pn/rev combo is not in the PNR Log (report only once per pn/rev)
-                                    if not missing_from_pnr.has_part(current_rev, current_rev):
+                                    if not missing_from_pnr.has_part(current_pn, current_rev):
                                         pnr_warnings.append("ECO WARNING: row {} - released CI {} not "
-                                                            "in PNR Log.".format(cell.row, current_pn_plus_rev))
+                                                            "in the PNR Log.".format(cell.row, current_pn_plus_rev))
                                         missing_from_pnr.add_part(current_pn, current_rev, cell.value)
 
                             # The following block of validation tests keeps track of the ECO numbers recorded
@@ -531,7 +538,7 @@ def extract_ps1_tab_part_nums(arguments, pnr_list=None, pnr_warnings=[], pnr_dup
                     if indent_reduced and current_indent_level == 0:
                         pn_table[-1][-1] = "\n" + pn_table[-1][-1]
 
-                    pn_table[-1].append(cell.value)
+                    pn_table[-1].append(unidecode(cell.value))
 
                 # "Media" column
                 if cell.column == MT_COL:
@@ -558,7 +565,7 @@ def extract_ps1_tab_part_nums(arguments, pnr_list=None, pnr_warnings=[], pnr_dup
                             warn_col('WARNING: ISO name in CI_Sheet cell {}{} is {} chars. Is vol name <= '
                                      '16 chars?\n'.format(IN_COL, cell.row, iso_name_len))
 
-    return cid_tables, cid_table_order, pnr_warnings, missing_from_pnr
+    return cid_tables, cid_table_order, pnr_warnings, missing_from_pnr, new_parts
 
 
 def write_single_cid_file(contents_id_table, eol):
@@ -686,11 +693,14 @@ def main():
     # pnr_verify should be the opposite of argument "no_pnr_verify"'s value
     pnr_verify = not arguments["no_pnr_verify"]
 
+    if arguments["new_pn_only"]:
+        pnr_verify = False
+
     CONSOLE_HOLD = arguments["console_hold"]
 
     if pnr_verify:
         print("Parsing PN Reserve Log...", end=" ")
-    else:
+    elif not arguments["new_pn_only"]:
         warn_col('WARNING: In "-np" mode, skipping validation against PN Reserve Log.')
 
     # if pnr_verify is still set, parse the PNR log.
@@ -699,7 +709,7 @@ def main():
 
     print("Parsing/validating ECO form...")
     # Extract ECO spreadsheet PNs in CONTENTS_ID format (returns a dict of multi-line strings, keyed to media type)
-    cid_tables, cid_table_order, pnr_warnings, missing_from_pnr = \
+    cid_tables, cid_table_order, pnr_warnings, missing_from_pnr, new_parts = \
         extract_ps1_tab_part_nums(arguments, pnr_list, pnr_warnings, pnr_dupe_pn_list)
 
     # Set file output line endings to requested format.  One (and only one) will always be True.  Default is UNIX.
@@ -724,9 +734,16 @@ def main():
             if input("Automatically add missing CI(s) to PN Reserve Log? [y/N] ") in ['Y', 'y']:
                 if write_list_to_pnr(pnr.PNRL_PATH, CURRENT_ECO, missing_from_pnr, close_workbook=False):
                     print("")
-                    for ci in missing_from_pnr.flat_pretty_list():
+                    for ci in missing_from_pnr.flat_list():
                         # print(Fore.CYAN + "  Added {}".format(ci) + Fore.RESET)
-                        pnr_warnings.append("INFO: CID added {} to the PNR Log, ignore ECO warning.".format(ci))
+                        i = 0
+                        pnr_warnings_copy = pnr_warnings
+                        pnr_warnings = []
+                        for warning in pnr_warnings_copy:
+                            if not warning.find('CI {} not in the PNR Log'.format(ci)) > 0:
+                                pnr_warnings.append(warning)
+
+                        pnr_warnings.append("INFO: CID added {} to the PNR Log.".format(ci))
             print("")
         with io.open("PNR_WARNINGS", "w", newline=eol) as f:
             for warning in pnr_warnings:
@@ -740,15 +757,10 @@ def main():
         inf_col("Creating file NEW_PARTS, containing only new, unique parts...", end=' ')
 
         with io.open("NEW_PARTS", "w", newline=eol) as f:
-            f.write("NOTE: This file lists only the new, unique parts on this ECO. Duplicate and previously-released\n"
-                    "parts are not included.  Nesting is preserved (ex. 065s are indented under the first 139 they\n"
-                    "are affiliated with).  Be aware that you may not be seeing all members of a 139/142/etc., since\n"
-                    "previously-released parts, or parts already displayed under earlier 139s/etc., "
-                    "will be missing.\n\n")
-            for table in cid_table_order:
-                if cid_tables[table]:
-                    f.write(unidecode(bdt_utils.pretty_table(cid_tables[table], 3)))
-                    f.write("\n\n")
+            f.write("NOTE: This file lists only the new, unique parts on this ECO.\n"
+                    "Duplicate and previously-released parts are not included.\n\n")
+            f.write(new_parts.text_pretty_list())
+
     else:
         # Combine all CONTENTS_IDs into one document.  Can be combined with -m and/or -s.
         if arguments["print_to_one"]:

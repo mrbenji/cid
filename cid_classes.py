@@ -1,5 +1,7 @@
 #!/usr/bin/env python3
 
+import bdt_utils
+
 # standard libraries
 import re
 from collections import defaultdict
@@ -64,9 +66,10 @@ def is_valid_rev(rev_text, mode=1):
 
 @total_ordering
 class Rev(object):
-    def __init__(self, name, eco=None):
+    def __init__(self, name, eco=None, description=None):
         self.name = str(name).strip()
         self.eco = str(eco)
+        self.description = description
 
         # mode 2 checks that revs contain only chars in VALID_REV_CHARS, allowing this
         # Rev object to be created if the Rev is invalid per the CM standards but the
@@ -170,12 +173,12 @@ class Part(object):
         # returns True or False, based on whether or not rev_text is one of self.rev's keys
         return rev_text in self.revs
 
-    def add_rev(self, rev_text, eco=None):
+    def add_rev(self, rev_text, eco=None, description=None):
         rev_text = str(rev_text)
         if self.has_rev(rev_text):
             return False
 
-        self.revs[rev_text] = Rev(rev_text, eco)
+        self.revs[rev_text] = Rev(rev_text, eco, description)
 
         if not self.max_rev or (self.revs[rev_text] > self.max_rev):
             self.max_rev = Rev(rev_text)
@@ -190,11 +193,11 @@ class ListOfParts(object):
         else:
             self.parts = parts
 
-    def add_part(self, pn, rev, eco=None):
+    def add_part(self, pn, rev, eco=None, description=None):
         if pn not in list(self.parts.keys()):
             self.parts[pn] = Part(pn)
 
-        return self.parts[pn].add_rev(rev, eco)
+        return self.parts[pn].add_rev(rev, eco, description)
 
     def has_part(self, pn, rev):
         if pn not in list(self.parts.keys()):
@@ -217,7 +220,15 @@ class ListOfParts(object):
 
         return self.parts[pn].revs[rev]
 
-    def flat_pretty_list(self):
+    def text_pretty_list(self):
+        return_list = []
+        for part in sorted(self.parts):
+            for rev in sorted(self.parts[part].revs):
+                return_list.append([self.parts[part].number + " Rev. {}".format(self.parts[part].revs[rev].name),
+                                    self.parts[part].revs[rev].description])
+        return bdt_utils.pretty_table(return_list, 1)
+
+    def flat_list(self):
         return_list = []
         for part in sorted(self.parts):
             for rev in sorted(self.parts[part].revs):
