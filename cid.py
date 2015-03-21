@@ -184,7 +184,21 @@ def split_sheet_rows_ps1(pn_sheet, cover_sheet, pn_rows, media_to_skip, argument
     return media_sets, media_set_order, new_parts
 
 
-def extract_ps1_tab_part_nums(arguments, pnr_list=None, pnr_warnings=[], pnr_dupe_pn_list=[]):
+def open_eco():
+
+    try:
+        # openpyxl is a library for reading/writing Excel files.
+        eco_form = openpyxl.load_workbook(ECO_PATH)
+
+    except openpyxl.utils.exceptions.InvalidFileException:
+        err_col('\nERROR: Could not open ECO form at path:\n'
+                '       {}\n\n       Is path correct?'.format(ECO_PATH))
+        exit_app()
+
+    return eco_form
+
+
+def extract_ps1_tab_part_nums(arguments, pnr_list=None, pnr_warnings=[], pnr_dupe_pn_list=[], eco_form=None):
     """
     Open ECO spreadsheet, extract part numbers from the PS1 tab
 
@@ -206,15 +220,6 @@ def extract_ps1_tab_part_nums(arguments, pnr_list=None, pnr_warnings=[], pnr_dup
 
     # pnr_verify will be True if a ListOfParts with the contents of the PN Reserve Log is passed in
     pnr_verify = isinstance(pnr_list, ListOfParts)
-
-    try:
-        # openpyxl is a library for reading/writing Excel files.
-        eco_form = openpyxl.load_workbook(ECO_PATH)
-
-    except openpyxl.utils.exceptions.InvalidFileException:
-        err_col('\nERROR: Could not open ECO form at path:\n'
-                '       {}\n\n       Is path correct?'.format(ECO_PATH))
-        exit_app()
 
     # ECO form workbook must have a sheet named "CoverSheet"
     try:
@@ -710,7 +715,7 @@ def main():
     print("Parsing/validating ECO form...")
     # Extract ECO spreadsheet PNs in CONTENTS_ID format (returns a dict of multi-line strings, keyed to media type)
     cid_tables, cid_table_order, pnr_warnings, missing_from_pnr, new_parts = \
-        extract_ps1_tab_part_nums(arguments, pnr_list, pnr_warnings, pnr_dupe_pn_list)
+        extract_ps1_tab_part_nums(arguments, pnr_list, pnr_warnings, pnr_dupe_pn_list, eco_form=open_eco())
 
     # Set file output line endings to requested format.  One (and only one) will always be True.  Default is UNIX.
     if arguments["e"] == "dos":
