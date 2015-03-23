@@ -5,13 +5,13 @@ import cid
 
 from cid_classes import *
 
-# PNRL_PATH = r"\\us.ray.com\SAS\AST\eng\Operations\CM\Internal\Staff\CM_Submittals\PN_Reserve.xlsm"
+PNRL_PATH = r"\\us.ray.com\SAS\AST\eng\Operations\CM\Internal\Staff\CM_Submittals\PN_Reserve.xlsm"
 
 # PNRL_PATH = r"\\us.ray.com\SAS\AST\eng\Operations\CM\Internal\Staff\CM_Submittals\PN_Reserve_Copy.xlsm"
 # cid.warn_col("\nWARNING: Using PN_Reserve_Copy.xlsm for testing, PNR additions will not be live!\n")
 
-PNRL_PATH = r"c:\cid-tool\cid\PN_Reserve_copy.xlsm"
-cid.warn_col("\nWARNING: Using local PN_Reserve Log for testing!\n")
+# PNRL_PATH = r"c:\cid-tool\cid\PN_Reserve_copy.xlsm"
+# cid.warn_col("\nWARNING: Using local PN_Reserve Log for testing!\n")
 
 
 def extract_part_nums_pnr():

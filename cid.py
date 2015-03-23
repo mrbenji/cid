@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-VERSION_STRING = "CID v2.00 03/20/2015"
+VERSION_STRING = "CID v2.01 03/23/2015"
 
 # standard libraries
 import argparse
@@ -100,7 +100,6 @@ def split_sheet_rows_ps1(pn_sheet, cover_sheet, pn_rows, media_to_skip, argument
     current_media = ""
     current_media_type = ""
     part_number_count = 0
-    new_part_number_count = 0
     media_sets = {"skipped": []}
     media_set_order = []
     skip_media_set_appended = False
@@ -146,16 +145,15 @@ def split_sheet_rows_ps1(pn_sheet, cover_sheet, pn_rows, media_to_skip, argument
                         media_set_order.append("skipped")
                         skip_media_set_appended = True
 
-            # if -n/--new-pn-only is set, we need to verify the part is new before adding this row.
             if pn_sheet[NR_COL + str(row_num)].value and not pn_sheet[ECO_COL + str(row_num)].value and current_media:
-                new_part_number_count += 1
+                new_parts.add_part(str(pn_sheet[AD_COL + str(row_num)].value).strip(),
+                                   str(pn_sheet[NR_COL + str(row_num)].value).strip(),
+                                   CURRENT_ECO,
+                                   str(pn_sheet[DES_COL + str(row_num)].value).strip()
+                                   )
+                # if -n/--new-pn-only is set, we need to verify the part is new before adding row to media set.
                 if arguments["new_pn_only"]:
                     media_sets[current_media].append(row)
-                    new_parts.add_part(str(pn_sheet[AD_COL + str(row_num)].value).strip(),
-                                       str(pn_sheet[NR_COL + str(row_num)].value).strip(),
-                                       CURRENT_ECO,
-                                       str(pn_sheet[DES_COL + str(row_num)].value).strip()
-                                       )
                     # return to the top of the for loop
                     continue
 
@@ -166,20 +164,20 @@ def split_sheet_rows_ps1(pn_sheet, cover_sheet, pn_rows, media_to_skip, argument
                 media_sets["skipped"].append(row)
 
     print("\n{} total configuration items. {} CIs "
-          "were changed.\n".format(part_number_count, new_part_number_count))
+          "were changed.\n".format(part_number_count, new_parts.count))
 
     config_items_released = cover_sheet['C16'].value
 
     if form_rev > Rev('B2'):
         if not config_items_released:
             inf_col('INFO: Filled in Cover Sheet cell C16 ("configuration items released").\n'
-                    '      Was blank, updated to {}.\n'.format(new_part_number_count))
-            write_config_items_count(ECO_PATH, new_part_number_count, close_workbook=False)
+                    '      Was blank, updated to {}.\n'.format(new_parts.count))
+            write_config_items_count(ECO_PATH, new_parts.count, close_workbook=False)
         else:
-            if not config_items_released == new_part_number_count:
+            if not config_items_released == new_parts.count:
                 inf_col('INFO: Updated Cover Sheet cell C16 ("configuration items released").\n'
-                        '      Was set to {}, corrected to {}.\n'.format(config_items_released, new_part_number_count))
-                write_config_items_count(ECO_PATH, new_part_number_count, close_workbook=False)
+                        '      Was set to {}, corrected to {}.\n'.format(config_items_released, new_parts.count))
+                write_config_items_count(ECO_PATH, new_parts.count, close_workbook=False)
 
     return media_sets, media_set_order, new_parts
 
@@ -430,7 +428,7 @@ def extract_ps1_tab_part_nums(arguments, pnr_list=None, pnr_warnings=[], pnr_dup
                                                                                     )
 
                                     pnr_warnings.append(error_msg)
-                                    print(error_msg)
+                                    warn_col(error_msg)
 
                     # Replace p/n in last table "cell" with pn+revision
                     pn_table[-1][-1] = current_pn_plus_rev
@@ -728,8 +726,16 @@ def main():
         exit_app()
 
     if pnr_warnings:
-        # warn_col('\nWARNING: Additional issues found in PN Reserve Log validation phase.\n         '
-        #       'See file PNR_WARNINGS for details.\n')
+
+        # Warn if a PN/Rev combo not on this ECO is listed on the PNR as being released on this ECO
+        pnr_list_for_this_eco = pnr_list.parts_on_eco(CURRENT_ECO)
+        for part in pnr_list_for_this_eco.parts:
+            if new_parts.has_part(part):
+                for rev in pnr_list_for_this_eco.parts[part].revs:
+                    if not new_parts.has_part(part, rev):
+                        warn_col("WARNING: PNR Log lists {} Rev. {} as released on this ECO,\n"
+                                 "         but it is not listed on this ECO's CI_Sheet.".format(part, rev))
+
         missing_from_pnr_count = missing_from_pnr.count
         if missing_from_pnr_count:
             if missing_from_pnr_count == 1:

@@ -5,6 +5,7 @@ import shutil
 import pywintypes
 import time
 import os
+import textwrap
 
 # Additional local modules
 import cid
@@ -29,27 +30,61 @@ def calc_first_blank():
     return len(Range('A1').table.value) + 1
 
 
-def write_config_items_count(eco_path, release_count, close_workbook=True):
-    shutil.copy2(eco_path, eco_path + ".bak")
-    wb = Workbook(eco_path)
+def error_text(error):
+    hr, msg, exc, arg = error.args
+    return textwrap.fill(exc[2])
+
+
+def save_workbook(workbook, descrip):
     try:
-        wb.save()
-    except pywintypes.com_error:
-        cid.warn_col("\nWARNING: Another user has the ECO file open, could not write to it.")
-        return 0
+        workbook.save()
+    except pywintypes.com_error as error:
+        cid.warn_col("\nWARNING: COM error, couldn't write to {}.\n\nCOM error text:".format(descrip))
+        print(error_text(error))
+        return False
+
+    return True
+
+
+def open_workbook(workbook_path, descrip, active_tab):
+    shutil.copy2(workbook_path, workbook_path + ".bak")
+
     try:
-        Sheet("CoverSheet").activate()
+        wb = Workbook(workbook_path)
+    except pywintypes.com_error as error:
+        cid.warn_col("\nWARNING: COM error, couldn't open {}.\n\nCOM error text:".format(descrip))
+        print(error_text(error))
+        return None
+
+    if not save_workbook(wb, descrip):
+        return None
+    try:
+        Sheet(active_tab).activate()
     except pywintypes.com_error:
         time.sleep(1)
         try:
-            Sheet("CoverSheet").activate()
-        except pywintypes.com_error:
-            cid.warn_col("\nWARNING: Having trouble setting ECO file active tab, could not write to it.")
-            return 0
+            Sheet(active_tab).activate()
+        except pywintypes.com_error as error:
+            cid.warn_col("\nWARNING: COM error, couldn't set {} tab {} to active."
+                         "\n\nCOM error text:".format(descrip, active_tab))
+            print(error_text(error))
+            return None
+
+    return wb
+
+
+def write_config_items_count(eco_path, release_count, close_workbook=True):
+
+    wb = open_workbook(eco_path, "ECO Form", "CoverSheet")
+
+    if not wb:
+        return 0
 
     Range('C16').value = release_count
 
-    wb.save()
+    if not save_workbook(wb, "ECO Form"):
+        return 0
+
     if close_workbook:
         wb.close()
 
@@ -57,22 +92,11 @@ def write_config_items_count(eco_path, release_count, close_workbook=True):
 
 
 def write_list_to_pnr(pnrl_path, eco_num, list_of_parts=ListOfParts(), close_workbook=True):
-    shutil.copy2(pnrl_path, pnrl_path + ".bak")
-    wb = Workbook(pnrl_path)
-    try:
-        wb.save()
-    except pywintypes.com_error:
-        cid.warn_col("\nWARNING: Another user has the PNR Log open, could not write to it.")
-        wb.close()
-        return 0
 
-    except pywintypes.com_error:
-        try:
-            time.sleep(1)
-            Sheet("PN_Rev").activate()
-        except pywintypes.com_error:
-            cid.warn_col("\nWARNING: Having trouble setting PNR Log active tab, could not write to it.")
-            return 0
+    wb = open_workbook(pnrl_path, "PNR Log", "PN_Rev")
+
+    if not wb:
+        return 0
 
     first_row = calc_first_blank()
     current_row = first_row
@@ -96,7 +120,9 @@ def write_list_to_pnr(pnrl_path, eco_num, list_of_parts=ListOfParts(), close_wor
     # pass entire block of data to xlwings for file write
     Range('A{}:E{}'.format(first_row, current_row)).value = add_table
 
-    wb.save()
+    if not save_workbook(wb, "PNR Log"):
+        return 0
+
     if close_workbook:
         wb.close()
 

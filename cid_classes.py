@@ -199,9 +199,11 @@ class ListOfParts(object):
 
         return self.parts[pn].add_rev(rev, eco, description)
 
-    def has_part(self, pn, rev):
+    def has_part(self, pn, rev=None):
         if pn not in list(self.parts.keys()):
             return False
+        elif not rev:
+            return True
 
         return self.parts[pn].has_rev(rev)
 
@@ -234,6 +236,14 @@ class ListOfParts(object):
             for rev in sorted(self.parts[part].revs):
                 return_list.append("{} Rev. {}".format(self.parts[part].number,
                                                        self.parts[part].revs[rev].name))
+        return return_list
+
+    def parts_on_eco(self, eco_num):
+        return_list = ListOfParts()
+        for part in sorted(self.parts):
+            for rev in sorted(self.parts[part].revs):
+                if self.parts[part].revs[rev].eco == eco_num:
+                    return_list.add_part(part, rev, eco_num, description=self.parts[part].revs[rev].description)
         return return_list
 
     def list_of_lists(self):
