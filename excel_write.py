@@ -47,7 +47,6 @@ def save_workbook(workbook, descrip):
 
 
 def open_workbook(workbook_path, descrip, active_tab):
-    shutil.copy2(workbook_path, workbook_path + ".bak")
 
     try:
         wb = Workbook(workbook_path)
@@ -58,6 +57,9 @@ def open_workbook(workbook_path, descrip, active_tab):
 
     if not save_workbook(wb, descrip):
         return None
+
+    shutil.copy2(workbook_path, workbook_path + ".bak")
+
     try:
         Sheet(active_tab).activate()
     except pywintypes.com_error:

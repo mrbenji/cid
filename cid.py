@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-VERSION_STRING = "CID v2.01 03/23/2015"
+VERSION_STRING = "CID v2.02 03/23/2015"
 
 # standard libraries
 import argparse
@@ -523,7 +523,7 @@ def extract_ps1_tab_part_nums(arguments, pnr_list=None, pnr_warnings=[], pnr_dup
                     if not cell.value:
                         err_col("ERROR: P/N present in CI_Sheet cell {}{}, but description missing in {}{}.".format(
                             AD_COL, cell.row, DES_COL, cell.row))
-                        ERRORS_FOUND = True
+                        exit_app()
                     new_indent_level = cell.alignment.indent
 
                     # this will only happen on the first line
