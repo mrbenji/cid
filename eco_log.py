@@ -3,11 +3,15 @@
 # standard libraries
 import pywintypes
 import textwrap
+import sys
 from collections import defaultdict
 
 # Third Party Open Source Libs
 from xlwings import Workbook, Sheet, Range, RowCol   # Control Excel via COM. https://pypi.python.org/pypi/xlwings/0.3.4
+import openpyxl
 import six                                   # https://pypi.python.org/pypi/six/1.9.0
+
+import cid
 
 
 def calc_first_blank():
@@ -48,35 +52,47 @@ def activate_sheet(sheet_name):
         return None
 
 
-def read_workbook(wb_path, sheet_name):
+def read_workbook(wb_path, sheet_name, sheet_id):
 
-    wb = open_workbook(wb_path)
+    try:
+        # openpyxl is a library for reading/writing Excel files.
+        wb = openpyxl.load_workbook(wb_path, data_only=True)
+    except openpyxl.utils.exceptions.InvalidFileException:
+        cid.err_col('\n{}: Could not open {} at:'.format(sheet_id.upper(), sheet_id) +
+                    '\n       {}'.format(wb_path))
+        cid.exit_app()
 
-    if not wb:
-        return 0
+    wb_sheet = wb.worksheets[0]
+    try:
+        wb_rows = wb_sheet.rows
+    except AttributeError:
+        cid.err_col('\n{}: No {} tab in {} at path:'.format(sheet_id.upper(), sheet_name, sheet_id) +
+                    '\n\n     {}'.format(wb_path))
+        sys.exit()
 
-    activate_sheet(sheet_name)
-    sheet_data = Range('A4').table.value
+    wb_data = defaultdict()
 
-    eco_log_data = defaultdict()
+    row_num = 1
 
-    for row in sheet_data:
-        if row[1]:
-            eco_num = str(round(row[0]))
-            eco_log_data[eco_num] = defaultdict()
-            eco_log_data[eco_num]["date_assigned"] = row[1]
-            eco_log_data[eco_num]["initiator"] = row[2]
-            eco_log_data[eco_num]["part_number"] = row[3]
-            eco_log_data[eco_num]["project_data"] = row[4]
+    for row in wb_rows:
+        if row_num < 4:
+            continue
 
-    # if not save_workbook(wb, "c:\cid-tool\cid\output.xlsx"):
-    #     return 0
+        if row[1].value:
+            eco_num = str(row[0].value)
+            wb_data[eco_num] = defaultdict()
+            wb_data[eco_num]["date_assigned"] = row[1].value
+            wb_data[eco_num]["initiator"] = row[2].value
+            wb_data[eco_num]["part_number"] = row[3].value
+            wb_data[eco_num]["project_data"] = row[4].value
+
+        row_num += 1
 
     return 1
 
 
 def main():
-    read_workbook("c:\cid-tool\cid\ECO.xlsx", "ALL ECO's")
+    read_workbook(r"c:\cid-tool\cid\ECO.xlsx", "ALL ECO's", "ECO Log")
 
 if __name__ == "__main__":
     main()
