@@ -10,6 +10,7 @@ import textwrap
 # Additional local modules
 import cid
 from cid_classes import *
+import cid_classes
 
 # Third Party Open Source Libs
 from xlwings import Workbook, Sheet, Range   # Control Excel via COM. https://pypi.python.org/pypi/xlwings/0.3.4
@@ -99,6 +100,21 @@ def write_config_items_count(eco_path, release_count, close_workbook=True):
     return 1
 
 
+def xlwings_range_to_list_of_parts(range):
+
+    hold_valid_chars = cid_classes.VALID_REV_CHARS
+    cid_classes.VALID_REV_CHARS = VALID_AND_INVALID_REV_CHARS
+
+    return_list_of_parts = ListOfParts()
+
+    for row in range.formula:
+        return_list_of_parts.add_part(row[0], row[2], row[3])
+
+    cid_classes.VALID_REV_CHARS = hold_valid_chars
+
+    return return_list_of_parts
+
+
 def write_list_to_pnr(pnrl_path, eco_num, list_of_parts=ListOfParts(), close_workbook=True):
 
     wb = open_workbook(pnrl_path, "PNR Log", "PN_Rev")
@@ -106,7 +122,9 @@ def write_list_to_pnr(pnrl_path, eco_num, list_of_parts=ListOfParts(), close_wor
     if not wb:
         return 0
 
+    current_PNR = xlwings_range_to_list_of_parts(Range('A1:D{}'.format(calc_first_blank() - 1)))
     first_row = calc_first_blank()
+
     current_row = first_row
 
     user = uid_to_name(os.environ['USERNAME'])
@@ -116,6 +134,10 @@ def write_list_to_pnr(pnrl_path, eco_num, list_of_parts=ListOfParts(), close_wor
     add_table = []
 
     for part_num in list_of_parts.list_of_lists():
+        if current_PNR.has_part(part_num[0], part_num[1]):
+            cid.warn_col("  Skipping add of {} Rev. {}, was added since last save.".format(part_num[0], part_num[1]))
+            continue
+
         if part_num[2] == eco_num:
             add_table.append([part_num[0], None, part_num[1], part_num[2], None])
             print(Fore.CYAN + "  Adding {} Rev. {}".format(part_num[0], part_num[1]) + Fore.RESET)
@@ -125,13 +147,16 @@ def write_list_to_pnr(pnrl_path, eco_num, list_of_parts=ListOfParts(), close_wor
             print(Fore.CYAN + "  Adding {} Rev. {} (ECO {})".format(part_num[0], part_num[1], part_num[2]) + Fore.RESET)
         current_row += 1
 
-    # pass entire block of data to xlwings for file write
-    Range('A{}:E{}'.format(first_row, current_row)).value = add_table
-
-    if not save_workbook(wb, "PNR Log"):
+    if not current_row == first_row:
+        # pass entire block of data to xlwings for file write
+        Range('A{}:E{}'.format(first_row, current_row)).value = add_table
+    else:
+        cid.inf_col('\nINFO: Parts previously added to the PN Reserve Log have now been saved.')
         return 0
 
     if close_workbook:
+        if not save_workbook(wb, "PNR Log"):
+            return 0
         wb.close()
 
     return 1

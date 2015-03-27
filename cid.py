@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-VERSION_STRING = "CID v2.02 03/23/2015"
+VERSION_STRING = "CID v2.03 03/27/2015"
 
 # standard libraries
 import argparse
@@ -741,21 +741,27 @@ def main():
             if missing_from_pnr_count == 1:
                 inf_col('INFO: 1 CI on your ECO is missing from the PN Reserve Log.\n')
             else:
-                inf_col('INFO: {} CIs on your ECO are missing from the PN Reserve Log.\n'.format(missing_from_pnr.count))
+                inf_col('INFO: {} CIs on your ECO are missing from the PN Reserve Log.\n'.format(missing_from_pnr_count))
             if input("Automatically add missing CI(s) to PN Reserve Log? [y/N] ") in ['Y', 'y']:
+                inf_col('INFO: If this seems to hang, switch to the Excel window displaying the\n'
+                        '      PN_Reserve, click "No" in the dialog box, then close the logfile\n'
+                        '      without saving. Someone else has the PNR Log open.\n')
                 if write_list_to_pnr(pnr.PNRL_PATH, CURRENT_ECO, missing_from_pnr, close_workbook=False):
                     print("")
                     for ci in missing_from_pnr.flat_list():
                         # print(Fore.CYAN + "  Added {}".format(ci) + Fore.RESET)
-                        i = 0
                         pnr_warnings_copy = pnr_warnings
                         pnr_warnings = []
                         for warning in pnr_warnings_copy:
                             if not warning.find('CI {} not in the PNR Log'.format(ci)) > 0:
                                 pnr_warnings.append(warning)
 
-                        pnr_warnings.append("INFO: CID added {} to the PNR Log.".format(ci))
-            print("")
+                        pnr_warnings.append("INFO: CID added {} to the PN Reserve Log.".format(ci))
+                    warn_col("WARNING: The PNR Log changes are not yet saved, to allow for CMEs\n"
+                             "         who would like to verify the added CIs first.  Please\n"
+                             "         save & close the PNR Log as soon as practical.\n")
+                else:
+                    inf_col('\nINFO: Nothing new written to the PN Reserve Log.\n')
         with io.open("PNR_WARNINGS", "w", newline=eol) as f:
             for warning in pnr_warnings:
                 f.write(unidecode(warning) + "\n")

@@ -30,9 +30,9 @@ def is_valid_rev(rev_text, mode=1):
     :return: True or False, depending on whether the selected mode flags the rev as valid
     """
 
-    # Numeric revisions are legal for redline releases, but must be converted to string.
-    if isinstance(rev_text, int):
-        rev_text = str(rev_text)
+    # Fully-numeric revisions are legal for redline releases.
+    if isinstance(rev_text, int) or str(rev_text).isdigit():
+        return True
 
     # "six" is a package that allows for generic tests, in this case we're testing for a "string-like object"
     # i.e. valid revs must be non-zero-length "string-like objects" (string, char, unicode)
