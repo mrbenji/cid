@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-VERSION_STRING = "CID v2.03 03/27/2015"
+VERSION_STRING = "CID v2.04 03/27/2015"
 
 # standard libraries
 import argparse
@@ -196,7 +196,7 @@ def open_eco():
     return eco_form
 
 
-def extract_ps1_tab_part_nums(arguments, pnr_list=None, pnr_warnings=[], pnr_dupe_pn_list=[], eco_form=None):
+def extract_ps1_tab_part_nums(arguments, pnr_list=None, pnr_warnings=[], pnr_dupe_pn_list=ListOfParts(), eco_form=None):
     """
     Open ECO spreadsheet, extract part numbers from the PS1 tab
 
@@ -390,7 +390,7 @@ def extract_ps1_tab_part_nums(arguments, pnr_list=None, pnr_warnings=[], pnr_dup
 
                     if pnr_verify:
 
-                        if current_pn_plus_rev in pnr_dupe_pn_list:
+                        if pnr_dupe_pn_list.has_part(current_pn, current_rev):
                             err_col("ERROR: CI_Sheet cell {}{} contains PN {}, which is\n       in the PN Reserve Log "
                                     "more than once.\n".format(AD_COL, cell.row, current_pn_plus_rev))
                             ERRORS_FOUND = True
@@ -700,7 +700,7 @@ def main():
 
     pnr_list = None
     pnr_warnings = []
-    pnr_dupe_pn_list = []
+    pnr_dupe_pn_list = ListOfParts()
 
     # pnr_verify should be the opposite of argument "no_pnr_verify"'s value
     pnr_verify = not arguments["no_pnr_verify"]

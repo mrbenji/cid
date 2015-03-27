@@ -20,10 +20,9 @@ def extract_part_nums_pnr():
 
     :return: a tuple of values, including...
 
-     - contents of part number reserve log main worksheet, formatted as a dict.
-       Values are lists of dicts {rev:ECO}, keys are base p/n.
-
+     - a ListOfParts() for storing the contents of the part number reserve log main worksheet
      - a list of warnings generated during PN Reserve Log extraction, ex. invalid part numbers or revs
+     - a ListOfParts() containing duplicate part numbers in the PN Reserve Log
     """
 
     try:
@@ -45,7 +44,7 @@ def extract_part_nums_pnr():
 
     row_num = 0
     pnr_list = ListOfParts()
-    pnr_dupe_pn_list = []
+    pnr_dupe_pn_list = ListOfParts()
     pnr_warnings = []
 
     if not pn_sheet['A1'].value:
@@ -64,7 +63,7 @@ def extract_part_nums_pnr():
             if pnr_list.has_part(part_num, part_rev):
                 dupe_pn = "{} Rev. {}".format(part_num, part_rev)
                 pnr_warnings.append("PNR WARNING: Duplicate CI {} in PNR Log row {}.".format(dupe_pn, row_num))
-                pnr_dupe_pn_list.append(dupe_pn)
+                pnr_dupe_pn_list.add_part(part_num, part_rev, eco_num)
 
             try:
                 pnr_list.add_part(part_num, part_rev, eco_num)
