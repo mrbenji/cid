@@ -413,7 +413,7 @@ def extract_ps1_tab_part_nums(arguments, pnr_list=None, pnr_warnings=[], pnr_dup
                                                     " the PNR Log.".format(cell.row, current_pn_plus_rev))
                                 missing_from_pnr.add_part(current_pn, current_rev, CURRENT_ECO)
 
-                            # For new parts, warning if if new rev doesn't follow previous rev in PNRL
+                            # For new parts, warning if new rev doesn't follow previous rev in PNRL
                             if pnr_list.has_part(current_pn, prev_rev):
                                 expected_next_rev = pnr_list.parts[current_pn].revs[prev_rev].next_rev.name
                                 if (expected_next_rev != current_rev) and is_valid_rev(current_rev):
@@ -429,6 +429,15 @@ def extract_ps1_tab_part_nums(arguments, pnr_list=None, pnr_warnings=[], pnr_dup
 
                                     pnr_warnings.append(error_msg)
                                     warn_col(error_msg)
+
+                            # For new parts, warning if new rev is not A or 1 and downrev is not in PNRL
+                            elif current_rev not in ('A', '1'):
+                                error_msg = "WARNING: CI_Sheet row {} lists new CI {}, whose downrev \n" \
+                                            "         is not in the PN Reserve Log. " \
+                                            "Is the PN correct?".format(cell.row, current_pn_plus_rev)
+
+                                pnr_warnings.append(error_msg)
+                                warn_col(error_msg)
 
                     # Replace p/n in last table "cell" with pn+revision
                     pn_table[-1][-1] = current_pn_plus_rev
@@ -761,7 +770,7 @@ def main():
                              "         who would like to verify the added CIs first.  Please\n"
                              "         save & close the PNR Log as soon as practical.\n")
                 else:
-                    inf_col('\nINFO: Nothing new written to the PN Reserve Log.\n')
+                    inf_col('\nINFO: Nothing new was written to the PN Reserve Log.\n')
         with io.open("PNR_WARNINGS", "w", newline=eol) as f:
             for warning in pnr_warnings:
                 f.write(unidecode(warning) + "\n")

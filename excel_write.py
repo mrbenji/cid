@@ -130,12 +130,15 @@ def write_list_to_pnr(pnrl_path, eco_num, list_of_parts=ListOfParts(), close_wor
     user = uid_to_name(os.environ['USERNAME'])
     current_date = time.strftime("%Y-%m-%d")
 
+    not_all_parts_written = False
+
     # xlwings writes large data blocks much faster if all passed in at once as a 2D list (list of lists)
     add_table = []
 
     for part_num in list_of_parts.list_of_lists():
         if current_PNR.has_part(part_num[0], part_num[1]):
             cid.warn_col("  Skipping add of {} Rev. {}, was added since last save.".format(part_num[0], part_num[1]))
+            not_all_parts_written = True
             continue
 
         if part_num[2] == eco_num:
@@ -150,8 +153,12 @@ def write_list_to_pnr(pnrl_path, eco_num, list_of_parts=ListOfParts(), close_wor
     if not current_row == first_row:
         # pass entire block of data to xlwings for file write
         Range('A{}:E{}'.format(first_row, current_row)).value = add_table
+        if not_all_parts_written:
+            cid.inf_col('\nINFO: Previous CI additions (listed above as skipped) have now been\n'
+                        '      saved to the PN Reserve Log. New additions are not yet saved.')
     else:
-        cid.inf_col('\nINFO: Parts previously added to the PN Reserve Log have now been saved.')
+        cid.inf_col('\nINFO: Previous CI additions (listed above as skipped) have now been\n'
+                    '      saved to the PN Reserve Log.')
         return 0
 
     if close_workbook:
