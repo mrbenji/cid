@@ -51,6 +51,41 @@ def activate_sheet_xlwings(sheet_name):
         return None
 
 
+def read_workbook_xlwings(wb_path, sheet_name):
+
+    wb = open_workbook_xlwings(wb_path)
+
+    if not wb:
+        return 0
+
+    activate_sheet_xlwings(sheet_name)
+    sheet_data = Range('A4').table.value
+
+    eco_log_data = defaultdict()
+
+    row_num = 0
+
+    for row in sheet_data:
+        sheet_data[row_num][0] = round(row[0])
+        if row[1]:
+            eco_num = round(row[0])
+            eco_log_data[eco_num] = defaultdict()
+            eco_log_data[eco_num]["row_num"] = row_num
+            eco_log_data[eco_num]["date_assigned"] = row[1]
+            eco_log_data[eco_num]["initiator"] = row[2]
+            eco_log_data[eco_num]["part_number"] = row[3]
+            eco_log_data[eco_num]["project_data"] = row[4]
+            eco_log_data[eco_num]["incorp_date"] = row[5]
+        row_num += 1
+
+    Range('A4').table.value = sheet_data
+
+    if not save_workbook_xlwings(wb, "c:\cid-tool\cid\output.xlsx"):
+        return 0
+
+    return 1
+
+
 def read_openpyxl(wb_path, sheet_name, sheet_id):
 
     try:
@@ -69,7 +104,7 @@ def read_openpyxl(wb_path, sheet_name, sheet_id):
                     '\n\n     {}'.format(wb_path))
         sys.exit()
 
-    eco_data = defaultdict()
+    eco_log_data = defaultdict()
 
     wb_update_table = []
 
@@ -86,22 +121,23 @@ def read_openpyxl(wb_path, sheet_name, sheet_id):
         if row[1].value and str(row[1].value).lower() not in marked_unused:
             eco_num = row[0].value
             print(eco_num)
-            eco_data[eco_num] = defaultdict()
-            eco_data[eco_num]["date_assigned"] = row[1].value
-            eco_data[eco_num]["initiator"] = row[2].value
-            eco_data[eco_num]["part_number"] = row[3].value
-            eco_data[eco_num]["project_data"] = row[4].value
-            eco_data[eco_num]["incorp_date"] = row[5].value
+            eco_log_data[eco_num] = defaultdict()
+            eco_log_data[eco_num]["row_num"] = row[1].row
+            eco_log_data[eco_num]["date_assigned"] = row[1].value
+            eco_log_data[eco_num]["initiator"] = row[2].value
+            eco_log_data[eco_num]["part_number"] = row[3].value
+            eco_log_data[eco_num]["project_data"] = row[4].value
+            eco_log_data[eco_num]["incorp_date"] = row[5].value
             wb_update_table.append([eco_num, row[1].value, row[2].value, row[3].value, row[4].value, row[5].value])
 
         row_num += 1
 
-    return eco_data
+    return eco_log_data
 
 
 def main():
-    eco_data = read_openpyxl(r"c:\cid-tool\cid\ECO.xlsx", "ALL ECO's", "ECO Log")
-    if eco_data:
+    eco_log_data = read_openpyxl(r"c:\cid-tool\cid\ECO.xlsx", "ALL ECO's", "ECO Log")
+    if eco_log_data:
         print("Completed.")
 
 if __name__ == "__main__":
