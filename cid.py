@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-VERSION_STRING = "CID v2.04 03/27/2015"
+VERSION_STRING = "CID v2.05 03/30/2015"
 
 # standard libraries
 import argparse
@@ -743,7 +743,10 @@ def main():
                 for rev in pnr_list_for_this_eco.parts[part].revs:
                     if not new_parts.has_part(part, rev):
                         warn_col("WARNING: PNR Log lists {} Rev. {} as released on this ECO,\n"
-                                 "         but it is not listed on this ECO's CI_Sheet.".format(part, rev))
+                                 "         but that Rev is not listed on this ECO's CI_Sheet.".format(part, rev))
+            else:
+                warn_col("WARNING: PNR Log lists {} as released on this ECO, but\n"
+                         "         that PN is not listed on this ECO's CI_Sheet.".format(part))
 
         missing_from_pnr_count = missing_from_pnr.count
         if missing_from_pnr_count:

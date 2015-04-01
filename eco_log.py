@@ -1,16 +1,21 @@
 #!/usr/bin/env python3
 
+ECO_LOG_PATH = r"c:\cid-tool\cid\ECO.xlsx"
+
+# ECO_LOG_PATH = \
+#     r"\\us.ray.com\SAS\ast\eng\Operations\cm\Internal\Doc_Ctrl\hcm\DOC_CTRL_GENERAL\LOGS\eco_trackinglog\ECO.xlsx"
+
 # standard libraries
 import pywintypes
 import textwrap
 import sys
-from collections import defaultdict
 
 # Third Party Open Source Libs
 from xlwings import Workbook, Sheet, Range  # Control Excel via COM. https://pypi.python.org/pypi/xlwings/0.3.4
 import openpyxl                             # https://pypi.python.org/pypi/openpyxl/2.2.0
 
 import cid
+from cid_classes import Part
 
 
 def calc_first_blank_xlwings():
@@ -51,7 +56,7 @@ def activate_sheet_xlwings(sheet_name):
         return None
 
 
-def read_workbook_xlwings(wb_path, sheet_name):
+def eco_log_formulas_to_numbers(wb_path, sheet_name):
 
     wb = open_workbook_xlwings(wb_path)
 
@@ -59,28 +64,33 @@ def read_workbook_xlwings(wb_path, sheet_name):
         return 0
 
     activate_sheet_xlwings(sheet_name)
-    sheet_data = Range('A4').table.value
 
-    eco_log_data = defaultdict()
+    col_to_update = Range('A4:A{}'.format(calc_first_blank_xlwings())).value
 
-    row_num = 0
+    for row_num in range(0, len(col_to_update)):
+        col_to_update[row_num] = round(col_to_update[row_num])
 
-    for row in sheet_data:
-        sheet_data[row_num][0] = round(row[0])
-        if row[1]:
-            eco_num = round(row[0])
-            eco_log_data[eco_num] = defaultdict()
-            eco_log_data[eco_num]["row_num"] = row_num
-            eco_log_data[eco_num]["date_assigned"] = row[1]
-            eco_log_data[eco_num]["initiator"] = row[2]
-            eco_log_data[eco_num]["part_number"] = row[3]
-            eco_log_data[eco_num]["project_data"] = row[4]
-            eco_log_data[eco_num]["incorp_date"] = row[5]
-        row_num += 1
+    Range('A4:E{}'.format(calc_first_blank_xlwings())).value = col_to_update
 
-    Range('A4').table.value = sheet_data
+    if not save_workbook_xlwings(wb, ECO_LOG_PATH):
+        return 0
 
-    if not save_workbook_xlwings(wb, "c:\cid-tool\cid\output.xlsx"):
+    return 1
+
+
+def update_eco_log(wb_path, sheet_name, row_num, part):
+
+    wb = open_workbook_xlwings(wb_path)
+
+    if not wb:
+        return 0
+
+    activate_sheet_xlwings(sheet_name)
+    row_to_update = Range('A{r}:E{r}'.format(r=row_num)).value
+    row_to_update[3] = "{} Rev. {}".format(part.number, part.max_rev.name)
+    Range('A{r}:E{r}'.format(r=row_num)).value = row_to_update
+
+    if not save_workbook_xlwings(wb, ECO_LOG_PATH):
         return 0
 
     return 1
@@ -104,9 +114,7 @@ def read_openpyxl(wb_path, sheet_name, sheet_id):
                     '\n\n     {}'.format(wb_path))
         sys.exit()
 
-    eco_log_data = defaultdict()
-
-    wb_update_table = []
+    eco_log_data = {}
 
     row_num = 1
 
@@ -121,14 +129,13 @@ def read_openpyxl(wb_path, sheet_name, sheet_id):
         if row[1].value and str(row[1].value).lower() not in marked_unused:
             eco_num = row[0].value
             print(eco_num)
-            eco_log_data[eco_num] = defaultdict()
-            eco_log_data[eco_num]["row_num"] = row[1].row
+            eco_log_data[eco_num] = {}
+            eco_log_data[eco_num]["row_num"] = row_num
             eco_log_data[eco_num]["date_assigned"] = row[1].value
             eco_log_data[eco_num]["initiator"] = row[2].value
             eco_log_data[eco_num]["part_number"] = row[3].value
             eco_log_data[eco_num]["project_data"] = row[4].value
             eco_log_data[eco_num]["incorp_date"] = row[5].value
-            wb_update_table.append([eco_num, row[1].value, row[2].value, row[3].value, row[4].value, row[5].value])
 
         row_num += 1
 
@@ -136,9 +143,15 @@ def read_openpyxl(wb_path, sheet_name, sheet_id):
 
 
 def main():
-    eco_log_data = read_openpyxl(r"c:\cid-tool\cid\ECO.xlsx", "ALL ECO's", "ECO Log")
+    eco_log_data = read_openpyxl(ECO_LOG_PATH, "ALL ECO's", "ECO Log")
+
+    # if eco_log_data:
+    #     eco_log_formulas_to_numbers(ECO_LOG_PATH, "ALL ECO's")
+    test_part = Part("123-123456-01")
+    test_part.add_rev("C")
+
     if eco_log_data:
-        print("Completed.")
+        update_eco_log(ECO_LOG_PATH, "ALL ECO's", 2070, test_part)
 
 if __name__ == "__main__":
     main()
