@@ -4,7 +4,7 @@ import bdt_utils
 
 # standard libraries
 import re
-from collections import defaultdict
+from collections import OrderedDict
 
 # third party open source packages
 from functools import total_ordering   # https://pypi.python.org/pypi/functools/0.5
@@ -189,7 +189,7 @@ class Part(object):
 class ListOfParts(object):
     def __init__(self, parts=None):
         if not parts:
-            self.parts = {}
+            self.parts = OrderedDict()
         else:
             self.parts = parts
 
@@ -224,7 +224,7 @@ class ListOfParts(object):
 
     def text_pretty_list(self):
         return_list = []
-        for part in sorted(self.parts):
+        for part in self.parts:
             for rev in sorted(self.parts[part].revs):
                 return_list.append([self.parts[part].number + " Rev. {}".format(self.parts[part].revs[rev].name),
                                     self.parts[part].revs[rev].description])
@@ -232,7 +232,7 @@ class ListOfParts(object):
 
     def flat_list(self):
         return_list = []
-        for part in sorted(self.parts):
+        for part in self.parts:
             for rev in sorted(self.parts[part].revs):
                 return_list.append("{} Rev. {}".format(self.parts[part].number,
                                                        self.parts[part].revs[rev].name))

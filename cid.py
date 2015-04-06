@@ -1,11 +1,10 @@
 #!/usr/bin/env python3
 
-VERSION_STRING = "CID v2.05 03/30/2015"
+VERSION_STRING = "CID v2.06 04/06/2015"
 
 # standard libraries
 import argparse
 import sys
-import os
 import io
 
 # Additional local modules factoring out cid functionality
@@ -14,6 +13,7 @@ import cid_classes           # Re-import to allow alternate way to access consta
 import bdt_utils             # Benji's bag-o'-utility-functions
 import pnr                   # Part Number Reserve Log validation functionality
 from excel_write import *    # writing
+import eco_log
 
 # third party open source packages
 import openpyxl                          # https://pypi.python.org/pypi/openpyxl/2.2.0
@@ -733,6 +733,13 @@ def main():
     if ERRORS_FOUND:
         print("\nErrors found... skipping warnings and CONTENTS_ID creation until resolved.")
         exit_app()
+
+    if new_parts.count:
+        print("Checking ECO Log entry for PNs from this ECO... ", end="")
+        if not eco_log.check_pns(CURRENT_ECO, new_parts):
+            print("OK, ECO Log unchanged.\n")
+        else:
+            print("")
 
     if pnr_warnings:
 
