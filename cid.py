@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-VERSION_STRING = "CID v2.06 04/06/2015"
+VERSION_STRING = "CID v2.11 04/08/2015"
 
 # standard libraries
 import argparse
@@ -23,6 +23,7 @@ init()  # for colorama -- initialize functionality
 
 # Update this revision when the ECO form is updated
 NEWEST_FORM_REV = Rev('B3')
+FORM_REV = None
 
 ECO_PATH = ""
 CURRENT_ECO = 0
@@ -58,28 +59,28 @@ def form_rev_switches(cover_sheet):
     global MT_COL
     global IN_COL
     global PN_SHEET_COLS
-    global form_rev
+    global FORM_REV
 
     if not cover_sheet['A44'].value:
-        form_rev = Rev('B1')
+        FORM_REV = Rev('B1')
     else:
-        form_rev = Rev(cover_sheet['A44'].value)
+        FORM_REV = Rev(cover_sheet['A44'].value)
 
-    if form_rev == Rev('B1') or form_rev > Rev('B2'):
+    if FORM_REV == Rev('B1') or FORM_REV > Rev('B2'):
         ECO_COL = 'E'
         DES_COL = 'F'
         MT_COL = 'G'
         IN_COL = 'H'
         PN_SHEET_COLS = 'ABCEFGH'
 
-    if form_rev < NEWEST_FORM_REV:
+    if FORM_REV < NEWEST_FORM_REV:
         warn_col("\nWARNING: You are using outdated ECO form revision {}.\n         Please update to Rev. {} "
-                 "if possible.".format(form_rev.name, NEWEST_FORM_REV.name))
+                 "if possible.".format(FORM_REV.name, NEWEST_FORM_REV.name))
         input("\nPress Enter to continue...")
 
-    if form_rev > NEWEST_FORM_REV:
+    if FORM_REV > NEWEST_FORM_REV:
         warn_col("\nWARNING: You are using an newer rev of the ECO form ({}) than the\n"
-                 "         CID tool supports. The CID tool needs to be updated.".format(form_rev.name))
+                 "         CID tool supports. The CID tool needs to be updated.".format(FORM_REV.name))
         input("\nPress Enter to attempt processing anyway, or Ctrl-C to abort.")
 
 
@@ -168,7 +169,7 @@ def split_sheet_rows_ps1(pn_sheet, cover_sheet, pn_rows, media_to_skip, argument
 
     config_items_released = cover_sheet['C16'].value
 
-    if form_rev > Rev('B2'):
+    if FORM_REV > Rev('B2'):
         if not config_items_released:
             inf_col('INFO: Filled in Cover Sheet cell C16 ("configuration items released").\n'
                     '      Was blank, updated to {}.\n'.format(new_parts.count))
@@ -811,6 +812,11 @@ def main():
             for table in cid_table_order:
                 # write_single_cid_file outputs everything after the media type line to a CONTENTS_ID.<media type> file.
                 write_single_cid_file(bdt_utils.pretty_table(cid_tables[table], 3), eol)
+
+    if FORM_REV < Rev("B3"):
+        warn_col('\nWARNING: CID did not verify or update the count of changed CIs on the\n'
+                 '         ECO cover sheet, because it detected an outdated ECO form.\n'
+                 '         Ensure your cover sheet indicates the correct count of {}.'.format(new_parts.count))
 
     exit_app(0)
 

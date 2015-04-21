@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+# cid.warn_col("\nWARNING: Using local ECO.xlsx for testing, changes will not be live!\n")
 # ECO_LOG_PATH = r"c:\cid-tool\cid\ECO.xlsx"
 
 ECO_LOG_PATH = \
@@ -185,7 +186,7 @@ def check_pns(eco_num, parts=ListOfParts()):
 
     if return_val:
         print("none found.")
-        cid.inf_col("Added PN {} to the ECO Log.".format(pn_for_log))
+        cid.inf_col("Added PN {} to ECO {}'s row in the ECO Log.".format(pn_for_log, eco_num))
 
     return return_val
 

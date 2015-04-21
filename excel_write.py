@@ -11,6 +11,7 @@ import textwrap
 import cid
 from cid_classes import *
 import cid_classes
+from unidecode import unidecode          # https://pypi.python.org/pypi/Unidecode/0.04.17
 
 # Third Party Open Source Libs
 from xlwings import Workbook, Sheet, Range   # Control Excel via COM. https://pypi.python.org/pypi/xlwings/0.3.4
@@ -39,7 +40,7 @@ def calc_first_blank():
 
 def error_text(error):
     hr, msg, exc, arg = error.args
-    return textwrap.fill(exc[2])
+    return "{}\n".format(unidecode(textwrap.fill(exc[2])))
 
 
 def save_workbook(workbook, descrip):
