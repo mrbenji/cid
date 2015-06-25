@@ -57,26 +57,27 @@ def extract_part_nums_pnr():
         part_num = pn_sheet['A'+str(row_num)].value
         part_rev = pn_sheet['C'+str(row_num)].value
         eco_num = pn_sheet['D'+str(row_num)].value
+        comment_field = pn_sheet['E'+str(row_num)].value
 
         if part_num and part_rev and eco_num:
 
             if pnr_list.has_part(part_num, part_rev):
                 dupe_pn = "{} Rev. {}".format(part_num, part_rev)
                 pnr_warnings.append("PNR WARNING: Duplicate CI {} in PNR Log row {}.".format(dupe_pn, row_num))
-                pnr_dupe_pn_list.add_part(part_num, part_rev, eco_num)
+                pnr_dupe_pn_list.add_part(part_num, part_rev, eco_num, comment_field)
 
             try:
-                pnr_list.add_part(part_num, part_rev, eco_num)
+                pnr_list.add_part(part_num, part_rev, eco_num, comment_field)
 
             except ValueError:
-                if not is_valid_part(part_num):
+                if not is_valid_part(part_num) and not (str(comment_field).lower().find("waive") > -1):
                     pnr_warnings.append("PNR WARNING: Skipping PNR Log row {} "
                                         "-- illegal part number.".format(row_num))
                     cid.err_col("\n\nERROR: Illegal part number in PNR Log row {}.\n"
                                 "       PN '{}' on ECO {}.\n".format(row_num, part_num, eco_num))
                     input("Press Enter to continue...")
 
-                if not is_valid_rev(part_rev):
+                if not is_valid_rev(part_rev) and not (str(comment_field).lower().find("waive") > -1):
                     pnr_warnings.append("PNR WARNING: Skipping PNR Log row {} "
                                         "-- illegal revision {}.".format(row_num, part_rev))
 

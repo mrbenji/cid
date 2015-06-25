@@ -222,9 +222,13 @@ class ListOfParts(object):
 
         return self.parts[pn].revs[rev]
 
-    def text_pretty_list(self):
+    def text_pretty_list(self, sort=False):
         return_list = []
-        for part in self.parts:
+        if sort:
+            parts_to_print = sorted(self.parts)
+        else:
+            parts_to_print = self.parts
+        for part in parts_to_print:
             for rev in sorted(self.parts[part].revs):
                 return_list.append([self.parts[part].number + " Rev. {}".format(self.parts[part].revs[rev].name),
                                     self.parts[part].revs[rev].description])

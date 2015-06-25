@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-VERSION_STRING = "CID v2.11 04/08/2015"
+VERSION_STRING = "CID v2.15 06/25/2015"
 
 # standard libraries
 import argparse
@@ -74,8 +74,9 @@ def form_rev_switches(cover_sheet):
         PN_SHEET_COLS = 'ABCEFGH'
 
     if FORM_REV < NEWEST_FORM_REV:
-        warn_col("\nWARNING: You are using outdated ECO form revision {}.\n         Please update to Rev. {} "
-                 "if possible.".format(FORM_REV.name, NEWEST_FORM_REV.name))
+        warn_col("\nWARNING: ECO CoverSheet cell A44 does not contain '{}' -- you appear to be\n        "
+                 " using old ECO form Rev. {}.  Updating to Rev. {} is"
+                 " recommended.".format(NEWEST_FORM_REV.name, FORM_REV.name, NEWEST_FORM_REV.name))
         input("\nPress Enter to continue...")
 
     if FORM_REV > NEWEST_FORM_REV:
@@ -147,11 +148,21 @@ def split_sheet_rows_ps1(pn_sheet, cover_sheet, pn_rows, media_to_skip, argument
                         skip_media_set_appended = True
 
             if pn_sheet[NR_COL + str(row_num)].value and not pn_sheet[ECO_COL + str(row_num)].value and current_media:
-                new_parts.add_part(str(pn_sheet[AD_COL + str(row_num)].value).strip(),
-                                   str(pn_sheet[NR_COL + str(row_num)].value).strip(),
-                                   CURRENT_ECO,
-                                   str(pn_sheet[DES_COL + str(row_num)].value).strip()
-                                   )
+                try:
+                    new_parts.add_part(str(pn_sheet[AD_COL + str(row_num)].value).strip(),
+                                       str(pn_sheet[NR_COL + str(row_num)].value).strip(),
+                                       CURRENT_ECO,
+                                       str(pn_sheet[DES_COL + str(row_num)].value).strip()
+                                       )
+                except ValueError:
+                    err_col("\nERROR: CI_Sheet row {} - "
+                            '"{} Rev. {}" is not valid.'.format(row_num,
+                                                                str(pn_sheet[AD_COL + str(row_num)].value).strip(),
+                                                                str(pn_sheet[NR_COL + str(row_num)].value).strip()
+                                                                ))
+                    print("       If a rev exception was approved, use the -i argument to override.")
+                    exit_app()
+
                 # if -n/--new-pn-only is set, we need to verify the part is new before adding row to media set.
                 if arguments["new_pn_only"]:
                     media_sets[current_media].append(row)
@@ -785,6 +796,9 @@ def main():
         with io.open("PNR_WARNINGS", "w", newline=eol) as f:
             for warning in pnr_warnings:
                 f.write(unidecode(warning) + "\n")
+    else:
+        if os.path.isfile("PNR_WARNINGS"):
+            os.remove("PNR_WARNINGS")
 
     if arguments["new_pn_only"]:
 
@@ -796,7 +810,7 @@ def main():
         with io.open("NEW_PARTS", "w", newline=eol) as f:
             f.write("NOTE: This file lists only the new, unique parts on this ECO.\n"
                     "Duplicate and previously-released parts are not included.\n\n")
-            f.write(new_parts.text_pretty_list())
+            f.write(new_parts.text_pretty_list(sort=True))
 
     else:
         # Combine all CONTENTS_IDs into one document.  Can be combined with -m and/or -s.
