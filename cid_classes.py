@@ -134,7 +134,11 @@ class Rev(object):
                 return Rev(new_name)
 
         if self.name[-1] == "Y":
-            new_name = self.name[0:-1] + "AA"
+            if len(self.name) == 1:
+                new_name = "AA"
+            else:
+                prev_letters = Rev(self.name[0:len(self.name)-1]).next_rev
+                new_name = prev_letters.name + "A"
             return Rev(new_name)
 
 
