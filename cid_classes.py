@@ -66,10 +66,11 @@ def is_valid_rev(rev_text, mode=1):
 
 @total_ordering
 class Rev(object):
-    def __init__(self, name, eco=None, description=None):
+    def __init__(self, name, eco=None, description=None, comment=None):
         self.name = str(name).strip()
         self.eco = str(eco)
         self.description = description
+        self.comment = comment
 
         # mode 2 checks that revs contain only chars in VALID_REV_CHARS, allowing this
         # Rev object to be created if the Rev is invalid per the CM standards but the
@@ -177,12 +178,12 @@ class Part(object):
         # returns True or False, based on whether or not rev_text is one of self.rev's keys
         return rev_text in self.revs
 
-    def add_rev(self, rev_text, eco=None, description=None):
+    def add_rev(self, rev_text, eco=None, description=None, comment=None):
         rev_text = str(rev_text)
         if self.has_rev(rev_text):
             return False
 
-        self.revs[rev_text] = Rev(rev_text, eco, description)
+        self.revs[rev_text] = Rev(rev_text, eco, description, comment)
 
         if not self.max_rev or (self.revs[rev_text] > self.max_rev):
             self.max_rev = Rev(rev_text)
@@ -197,11 +198,11 @@ class ListOfParts(object):
         else:
             self.parts = parts
 
-    def add_part(self, pn, rev, eco=None, description=None):
+    def add_part(self, pn, rev, eco=None, description=None, comment=None):
         if pn not in list(self.parts.keys()):
             self.parts[pn] = Part(pn)
 
-        return self.parts[pn].add_rev(rev, eco, description)
+        return self.parts[pn].add_rev(rev, eco, description, comment)
 
     def has_part(self, pn, rev=None):
         if pn not in list(self.parts.keys()):

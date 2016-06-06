@@ -55,9 +55,10 @@ def extract_part_nums_pnr():
     for row in pn_rows:
         row_num += 1
         part_num = pn_sheet['A'+str(row_num)].value
+        comment_field = pn_sheet['B'+str(row_num)].value
         part_rev = pn_sheet['C'+str(row_num)].value
         eco_num = pn_sheet['D'+str(row_num)].value
-        comment_field = pn_sheet['E'+str(row_num)].value
+        description = pn_sheet['E'+str(row_num)].value
 
         if part_num and part_rev and eco_num:
 
@@ -67,7 +68,7 @@ def extract_part_nums_pnr():
                 pnr_dupe_pn_list.add_part(part_num, part_rev, eco_num, comment_field)
 
             try:
-                pnr_list.add_part(part_num, part_rev, eco_num, comment_field)
+                pnr_list.add_part(part_num, part_rev, eco_num, description, comment_field)
 
             except ValueError:
                 if not is_valid_part(part_num) and not (str(comment_field).lower().find("waive") > -1):
