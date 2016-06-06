@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-VERSION_STRING = "CID v2.16 06/25/2015"
+VERSION_STRING = "CID v2.17 06/06/2016"
 
 # standard libraries
 import argparse
@@ -31,7 +31,7 @@ CURRENT_ECO = 0
 # HAS_NO_MEDIA is a list of "media" tags used for P/Ns that are not put on any official media.  By default
 # they are skipped during CONTENTS_ID output. Media tags are converted to lowercase, with spaces converted
 # to underscores, before they are checked against this list.
-HAS_NO_MEDIA = ["scif", "hard_copy", "hardcopy", "synergy"]
+HAS_NO_MEDIA = ["scif", "hard_copy", "hardcopy", "hard copy", "synergy"]
 
 # Keep track of whether errors have been found, so if there are errors we can skip warnings and CID generation
 ERRORS_FOUND = False
@@ -281,6 +281,7 @@ def extract_ps1_tab_part_nums(arguments, pnr_list=None, pnr_warnings=[], pnr_dup
     part_numbers_already_used = {}
     old_part_numbers = {}
     missing_from_pnr = ListOfParts()
+    next_available_revs = []
     skip_media = False
 
     for set_name in media_set_order:
@@ -413,9 +414,14 @@ def extract_ps1_tab_part_nums(arguments, pnr_list=None, pnr_warnings=[], pnr_dup
                                 err_col("ERROR: CI_Sheet row {} -- new pn {} is marked in the\n       PN Reserve "
                                         "Log as released on ECO {}, not "
                                         "current ECO {}.\n".format(cell.row,
-                                                                   current_pn_plus_rev,
-                                                                   pnr_list.parts[current_pn].revs[current_rev].eco,
-                                                                   CURRENT_ECO))
+                                        current_pn_plus_rev, pnr_list.parts[current_pn].revs[current_rev].eco,
+                                        CURRENT_ECO))
+                                warn_text = "Latest PNR rev for {} is {}, next available is " \
+                                            "{}.\n".format(pnr_list.parts[current_pn].number,
+                                                           pnr_list.parts[current_pn].max_rev.name,
+                                                           pnr_list.parts[current_pn].max_rev.next_rev.name)
+                                warn_col("       " + warn_text)
+                                next_available_revs.append(warn_text)
                                 ERRORS_FOUND = True
 
                         else:
@@ -589,6 +595,13 @@ def extract_ps1_tab_part_nums(arguments, pnr_list=None, pnr_warnings=[], pnr_dup
                             warn_col('WARNING: ISO name in CI_Sheet cell {}{} is {} chars. Is vol name <= '
                                      '16 chars?\n'.format(IN_COL, cell.row, iso_name_len))
 
+    if next_available_revs:
+        inf_col("NOTE: Info on next available PNR revs was written to NEXT_AVAILABLE_REV.txt")
+        with io.open("NEXT_AVAILABLE_REV.txt", "w", newline="\r\n") as f:
+            for line in next_available_revs:
+                f.write(unidecode(line))
+        f.close()
+
     return cid_tables, cid_table_order, pnr_warnings, missing_from_pnr, new_parts
 
 
@@ -731,19 +744,19 @@ def main():
     if pnr_verify:
         pnr_list, pnr_warnings, pnr_dupe_pn_list = pnr.extract_part_nums_pnr()
 
-    print("Parsing/validating ECO form...")
-    # Extract ECO spreadsheet PNs in CONTENTS_ID format (returns a dict of multi-line strings, keyed to media type)
-    cid_tables, cid_table_order, pnr_warnings, missing_from_pnr, new_parts = \
-        extract_ps1_tab_part_nums(arguments, pnr_list, pnr_warnings, pnr_dupe_pn_list, eco_form=open_eco())
-
     # Set file output line endings to requested format.  One (and only one) will always be True.  Default is UNIX.
     if arguments["e"] == "dos":
         eol = '\r\n'
     else:
         eol = '\n'
 
+    print("Parsing/validating ECO form...")
+    # Extract ECO spreadsheet PNs in CONTENTS_ID format (returns a dict of multi-line strings, keyed to media type)
+    cid_tables, cid_table_order, pnr_warnings, missing_from_pnr, new_parts = \
+        extract_ps1_tab_part_nums(arguments, pnr_list, pnr_warnings, pnr_dupe_pn_list, eco_form=open_eco())
+
     if ERRORS_FOUND:
-        print("\nErrors found... skipping warnings and CONTENTS_ID creation until resolved.")
+        err_col("\nERRORS FOUND: Skipping CONTENTS_ID creation until resolved.")
         exit_app()
 
     if new_parts.count:
@@ -793,12 +806,12 @@ def main():
                              "         save & close the PNR Log as soon as practical.\n")
                 else:
                     inf_col('\nINFO: Nothing new was written to the PN Reserve Log.\n')
-        with io.open("PNR_WARNINGS", "w", newline=eol) as f:
+        with io.open("PNR_WARNINGS.txt", "w", newline="\r\n") as f:
             for warning in pnr_warnings:
-                f.write(unidecode(warning) + "\n")
+                f.write(unidecode(warning))
     else:
-        if os.path.isfile("PNR_WARNINGS"):
-            os.remove("PNR_WARNINGS")
+        if os.path.isfile("PNR_WARNINGS.txt"):
+            os.remove("PNR_WARNINGS.txt")
 
     if arguments["new_pn_only"]:
 
