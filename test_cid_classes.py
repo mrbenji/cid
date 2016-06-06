@@ -11,6 +11,7 @@ class CidClassesTest(unittest.TestCase):
         self.assertTrue(Rev("G") > Rev("A"))
         self.assertTrue(Rev("G") == Rev("G"))
         self.assertTrue(Rev("Y") < Rev("AA"))
+        self.assertTrue(Rev("BY") < Rev("CA"))
         self.assertTrue(Rev("AAB") > Rev("AAA"))
 
     def test_numeric_revs(self):
