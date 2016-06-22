@@ -94,6 +94,9 @@ class Rev(object):
         if self.name.isalpha() and other.name.isalpha() and len(self.name) != len(other.name):
             return len(self.name) > len(other.name)
 
+        if self.name.isdigit() and other.name.isdigit():
+            return int(self.name) > int(other.name)
+
         for position in range(len(self.name)):
             # if we've moved past the first position and only one operand has a value, we know that the operand
             # of greater length is the larger one.  Ex. B1 is greater than B, and C is not greater than CA.
@@ -107,8 +110,15 @@ class Rev(object):
             if self.name[position] == other.name[position]:
                 continue
 
-            # if the current letters don't match, the one with the greater index number is greater
-            return VALID_REV_CHARS.find(self.name[position]) > VALID_REV_CHARS.find(other.name[position])
+            # if both revs' remainders are alpha (or both are non-alpha), find the greater index at current position
+            if self.name[position:].isalpha() == other.name[position:].isalpha():
+                return VALID_REV_CHARS.find(self.name[position]) > VALID_REV_CHARS.find(other.name[position])
+            elif not self.name.isalpha() and other.name.isalpha():
+                    return False
+            elif self.name.isalpha() and not other.name.isalpha():
+                    return True
+            else:
+                continue
 
         return False
 
@@ -185,7 +195,10 @@ class Part(object):
 
         self.revs[rev_text] = Rev(rev_text, eco, description, comment)
 
-        if not self.max_rev or (self.revs[rev_text] > self.max_rev):
+        if self.max_rev:
+            if self.revs[rev_text] > self.max_rev:
+                self.max_rev = Rev(rev_text)
+        else:
             self.max_rev = Rev(rev_text)
 
         return True

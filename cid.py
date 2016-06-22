@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-VERSION_STRING = "CID v2.17 06/06/2016"
+VERSION_STRING = "CID v2.19 06/21/2016"
 
 # standard libraries
 import argparse
@@ -421,7 +421,7 @@ def extract_ps1_tab_part_nums(arguments, pnr_list=None, pnr_warnings=[], pnr_dup
                                                            pnr_list.parts[current_pn].max_rev.name,
                                                            pnr_list.parts[current_pn].max_rev.next_rev.name)
                                 warn_col("       " + warn_text)
-                                next_available_revs.append(warn_text)
+                                next_available_revs.append("Row " + str(cell.row) + ": " + warn_text)
                                 ERRORS_FOUND = True
 
                         else:

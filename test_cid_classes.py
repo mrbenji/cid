@@ -17,6 +17,8 @@ class CidClassesTest(unittest.TestCase):
     def test_numeric_revs(self):
         self.assertTrue(Rev("1") < Rev("5"))
         self.assertTrue(Rev("5") == Rev("5"))
+        self.assertTrue(Rev("2") < Rev("12"))
+        self.assertTrue(Rev("15") > Rev("3"))
 
     def test_alphanumeric_revs(self):
         self.assertTrue(Rev("B1") < Rev("B2"))
@@ -32,6 +34,8 @@ class CidClassesTest(unittest.TestCase):
         self.assertTrue(Rev("-") < Rev("A"))
         self.assertTrue(Rev("C5") > Rev("-"))
         self.assertTrue(Rev("B2") != Rev("B"))
+        self.assertTrue(Rev("M1") < Rev("AB"))
+        self.assertTrue(Rev("MB1") < Rev("ABC"))
 
     def test_invalid_revs(self):
         print('Verifying that revs are being properly flagged as invalid...')
@@ -130,6 +134,15 @@ class CidClassesTest(unittest.TestCase):
 
         # when a part isn't in the ListOfParts object, return "-" as the "next part
         self.assertEqual(my_list.next_rev("001-100100-00").name, "-")
+
+    def test_max_part(self):
+        my_part = Part("133-124163-04")
+        my_part.add_rev("AA")
+        my_part.add_rev("AB")
+        my_part.add_rev("W")
+        my_part.add_rev("W1")
+        my_part.add_rev("Y")
+        self.assertEqual(my_part.max_rev.name, "AB")
 
 
 if __name__ == "__main__":
