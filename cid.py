@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-VERSION_STRING = "CID v2.19 06/21/2016"
+VERSION_STRING = "CID v2.22 11/07/2016"
 
 # standard libraries
 import argparse
@@ -22,7 +22,7 @@ from colorama import init, Fore, Style   # https://pypi.python.org/pypi/colorama
 init()  # for colorama -- initialize functionality
 
 # Update this revision when the ECO form is updated
-NEWEST_FORM_REV = Rev('B3')
+NEWEST_FORM_REV = Rev('B5')
 FORM_REV = None
 
 ECO_PATH = ""
@@ -119,7 +119,7 @@ def split_sheet_rows_ps1(pn_sheet, cover_sheet, pn_rows, media_to_skip, argument
             current_media_col = pn_sheet[MT_COL + str(row_num)].value
 
             # if this row contains a note, we ignore it completely
-            if str(current_media_col).strip().lower() in ("note", "notes"):
+            if str(current_media_col).strip().lower() in ("note", "notes", "md5sum", "ddf"):
                 continue
 
             if pn_sheet[AD_COL + str(row_num)].value:
@@ -808,7 +808,8 @@ def main():
                     inf_col('\nINFO: Nothing new was written to the PN Reserve Log.\n')
         with io.open("PNR_WARNINGS.txt", "w", newline="\r\n") as f:
             for warning in pnr_warnings:
-                f.write(unidecode(warning))
+                f.write(unidecode(warning) + "\r\n")
+            f.close()
     else:
         if os.path.isfile("PNR_WARNINGS.txt"):
             os.remove("PNR_WARNINGS.txt")

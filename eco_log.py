@@ -174,13 +174,24 @@ def check_pns(eco_num, parts=ListOfParts()):
 
     pn_for_log = ""
 
+    # iterate over CI_Sheet rows
     for part_num in flat_part_list:
         if str(log_data["part_number"]).find(part_num) > -1:
             return False
+
+        # The first candidate for the p/n listed on ECO log is the first p/n on the
+        # ECO... if it does not have a source or executable prefix, it will only be
+        # used if no such p/n's are found on a later row.
         if not pn_for_log:
             pn_for_log = part_num
-        if (pn_for_log[0:3] in SRC_PREFIXES) and (part_num[0:3] in EXE_PREFIXES):
-            pn_for_log = part_num
+        else:
+            # p/n's with SRC or EXE prefixes are preferred over those without
+            if pn_for_log[0:3] not in (SRC_PREFIXES + EXE_PREFIXES) and \
+               part_num[0:3] in (SRC_PREFIXES + EXE_PREFIXES):
+                pn_for_log = part_num
+            # p/n's with EXE prefixes are preferred over those SRC prefixes
+            if (pn_for_log[0:3] in SRC_PREFIXES) and (part_num[0:3] in EXE_PREFIXES):
+                pn_for_log = part_num
 
     return_val = update_eco_log(ECO_LOG_PATH, "ALL ECO's", log_data["row_num"], pn_for_log)
 
