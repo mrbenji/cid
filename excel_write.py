@@ -18,13 +18,16 @@ from xlwings import Workbook, Sheet, Range   # Control Excel via COM. https://py
 from colorama import init, Fore, Style   # https://pypi.python.org/pypi/colorama/0.3.3
 init()  # for colorama -- initialize functionality
 
-UID_MAP = dict(ast1352="jbs",
-               ast1353="jmk",
-               ast1382="bdt",
-               ast1464="dec",
-               ast1560="tmr",
-               ast1941="wdm",
-               ast2145="lad")
+UID_MAP = {
+    "ast1352": "jbs",
+    "ast1353": "jmk",
+    "ast1382": "bdt",
+    "ast1464": "dec",
+    "ast1560": "tmr",
+    "ast1941": "wdm",
+    "ast2145": "lad",
+    1124517: "jcs"
+           }
 
 
 def uid_to_name(uid):

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-VERSION_STRING = "CID v2.22 11/07/2016"
+VERSION_STRING = "CID v2.23 02/13/2017"
 
 # standard libraries
 import argparse
@@ -31,7 +31,7 @@ CURRENT_ECO = 0
 # HAS_NO_MEDIA is a list of "media" tags used for P/Ns that are not put on any official media.  By default
 # they are skipped during CONTENTS_ID output. Media tags are converted to lowercase, with spaces converted
 # to underscores, before they are checked against this list.
-HAS_NO_MEDIA = ["scif", "hard_copy", "hardcopy", "hard copy", "synergy"]
+HAS_NO_MEDIA = ["scif", "hardcopy", "synergy"]
 
 # Keep track of whether errors have been found, so if there are errors we can skip warnings and CID generation
 ERRORS_FOUND = False
@@ -127,7 +127,7 @@ def split_sheet_rows_ps1(pn_sheet, cover_sheet, pn_rows, media_to_skip, argument
 
             # is this a new media set?
             if current_media_col:
-                current_media_type = str(current_media_col).strip().replace(" ", "_").lower()
+                current_media_type = str(current_media_col).strip().replace("_", "").replace(" ", "").lower()
                 curr_rev = pn_sheet[CR_COL + str(row_num)].value
                 new_rev = pn_sheet[NR_COL + str(row_num)].value
 
@@ -715,11 +715,13 @@ def main():
     # Convert parsed arguments from Namespace to dictionary
     arguments = vars(arguments)
 
-    if arguments["eco_file"].find('\\') == -1:
+    # If absolute ECO file path wasn't specified, prepend cwd
+    if not os.path.isabs(arguments["eco_file"]):
         ECO_PATH = os.getcwd() + '\\' + arguments["eco_file"]
     else:
         ECO_PATH = arguments["eco_file"]
 
+    # Ignore invalid rev letters (ex. I, O, S, Q, X, Z)
     if arguments["invalid_revs"]:
         cid_classes.VALID_REV_CHARS = VALID_AND_INVALID_REV_CHARS
 

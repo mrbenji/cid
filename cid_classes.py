@@ -36,7 +36,7 @@ def is_valid_rev(rev_text, mode=1):
 
     # "six" is a package that allows for generic tests, in this case we're testing for a "string-like object"
     # i.e. valid revs must be non-zero-length "string-like objects" (string, char, unicode)
-    if not (isinstance(rev_text, six.string_types) or isinstance(rev_text, six.string_types)) or not len(rev_text):
+    if not isinstance(rev_text, six.string_types) or not rev_text:
         return False
 
     # we start by assuming there are no digits in this rev
@@ -100,7 +100,7 @@ class Rev(object):
         for position in range(len(self.name)):
             # if we've moved past the first position and only one operand has a value, we know that the operand
             # of greater length is the larger one.  Ex. B1 is greater than B, and C is not greater than CA.
-            if len(other.name) <= position < len(self.name):
+            if len(other.name) <= position:
                 return True
             if len(self.name) <= position:
                 if len(other.name) > position:
@@ -160,7 +160,7 @@ PN_RE = re.compile(r'^\d\d\d\-\d\d\d\d\d\d\-\d\d$')
 def is_valid_part(pn_text):
     # "six" is a module that allows for generic tests, in this case we're testing for a "string-like object"
     # valid PNs must be non-zero-length "string-like objects" (string, char, unicode)
-    if not (isinstance(pn_text, six.string_types) or isinstance(pn_text, six.string_types) or not len(pn_text)):
+    if not isinstance(pn_text, six.string_types) or not pn_text:
         return False
 
     if not PN_RE.match(unidecode(pn_text)):
@@ -280,5 +280,5 @@ class ListOfParts(object):
     def count(self):
         total = 0
         for part in self.parts.keys():
-            total += len(self.parts[part].revs.keys())
+            total += len(self.parts[part].revs)
         return total
