@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-VERSION_STRING = "CID v2.23 02/13/2017"
+VERSION_STRING = "CID v2.25 09/07/2018"
 
 # standard libraries
 import argparse
@@ -22,7 +22,7 @@ from colorama import init, Fore, Style   # https://pypi.python.org/pypi/colorama
 init()  # for colorama -- initialize functionality
 
 # Update this revision when the ECO form is updated
-NEWEST_FORM_REV = Rev('B5')
+NEWEST_FORM_REV = Rev('B6')
 FORM_REV = None
 
 ECO_PATH = ""
@@ -119,7 +119,7 @@ def split_sheet_rows_ps1(pn_sheet, cover_sheet, pn_rows, media_to_skip, argument
             current_media_col = pn_sheet[MT_COL + str(row_num)].value
 
             # if this row contains a note, we ignore it completely
-            if str(current_media_col).strip().lower() in ("note", "notes", "md5sum", "ddf"):
+            if str(current_media_col).strip().lower() in ("note", "notes", "md5sum", "sha1sum", "sha256sum", "ddf"):
                 continue
 
             if pn_sheet[AD_COL + str(row_num)].value:
